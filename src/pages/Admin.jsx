@@ -8,7 +8,7 @@ export function Admin() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Form states for project insertion
+  // Form states for project insertion/edição
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [url, setUrl] = useState('');
@@ -16,6 +16,9 @@ export function Admin() {
   const [tags, setTags] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const [projects, setProjects] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -29,6 +32,71 @@ export function Admin() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchProjects = async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setProjects(data);
+    }
+  };
+
+  useEffect(() => {
+    if (user) fetchProjects();
+  }, [user]);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setTitle('');
+    setDescription('');
+    setUrl('');
+    setGithubUrl('');
+    setTags('');
+    setImageUrl('');
+  };
+
+  const handleStartEdit = (project) => {
+    setEditingId(project.id);
+    setTitle(project.title ?? '');
+    setDescription(project.description ?? '');
+    setUrl(project.url ?? '');
+    setGithubUrl(project.github_url ?? '');
+    setTags((project.tags ?? []).join(', '));
+    setImageUrl(project.image_url ?? '');
+    setSuccessMsg('');
+    setErrorMsg('');
+  };
+
+  const handleDelete = async (id) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    const { error } = await supabase.from('projects').delete().eq('id', id);
+    if (error) {
+      setErrorMsg(error.message);
+      return;
+    }
+    if (editingId === id) resetForm();
+    setSuccessMsg('Projeto excluído.');
+    fetchProjects();
+  };
+
+  const handleToggleVisible = async (project) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    const { error } = await supabase
+      .from('projects')
+      .update({ visible: !project.visible })
+      .eq('id', project.id);
+    if (error) {
+      setErrorMsg(error.message);
+      return;
+    }
+    fetchProjects();
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -63,30 +131,26 @@ export function Admin() {
     setLoading(true);
 
     const tagArray = tags.split(',').map((t) => t.trim()).filter(Boolean);
+    const payload = {
+      title,
+      description,
+      url,
+      github_url: githubUrl,
+      tags: tagArray,
+      image_url: imageUrl,
+    };
 
     try {
-      const { data, error } = await supabase.from('projects').insert([
-        {
-          title,
-          description,
-          url,
-          github_url: githubUrl,
-          tags: tagArray,
-          image_url: imageUrl,
-          visible: true,
-        },
-      ]);
+      const { error } = editingId
+        ? await supabase.from('projects').update(payload).eq('id', editingId)
+        : await supabase.from('projects').insert([{ ...payload, visible: true }]);
 
       if (error) {
         setErrorMsg(error.message);
       } else {
-        setSuccessMsg('🎉 Projeto adicionado com SUCESSO no Supabase!');
-        setTitle('');
-        setDescription('');
-        setUrl('');
-        setGithubUrl('');
-        setTags('');
-        setImageUrl('');
+        setSuccessMsg(editingId ? '✏️ Projeto atualizado com sucesso!' : '🎉 Projeto adicionado com SUCESSO no Supabase!');
+        resetForm();
+        fetchProjects();
       }
     } catch (err) {
       setErrorMsg('Erro ao salvar projeto.');
@@ -149,7 +213,7 @@ export function Admin() {
           {successMsg && <div className="alert-box alert-success">{successMsg}</div>}
           {errorMsg && <div className="alert-box alert-error">{errorMsg}</div>}
 
-          <h2 className="form-title">Adicionar Novo Projeto</h2>
+          <h2 className="form-title">{editingId ? 'Editar Projeto' : 'Adicionar Novo Projeto'}</h2>
           <form onSubmit={handleAddProject} className="project-form">
             <div className="form-group">
               <label>Título do Projeto *</label>
@@ -215,10 +279,46 @@ export function Admin() {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Salvando...' : 'Cadastrar Projeto'}
-            </button>
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Projeto'}
+              </button>
+              {editingId && (
+                <button type="button" className="btn btn-secondary" onClick={resetForm}>
+                  Cancelar
+                </button>
+              )}
+            </div>
           </form>
+
+          <h2 className="form-title list-title">Projetos Cadastrados</h2>
+          {projects.length === 0 ? (
+            <p className="empty-list">Nenhum projeto cadastrado ainda.</p>
+          ) : (
+            <ul className="project-list">
+              {projects.map((project) => (
+                <li key={project.id} className="project-list-item">
+                  <div className="project-list-info">
+                    <strong>{project.title}</strong>
+                    <span className={`visibility-pill ${project.visible ? 'visible' : 'hidden'}`}>
+                      {project.visible ? 'Visível' : 'Oculto'}
+                    </span>
+                  </div>
+                  <div className="project-list-actions">
+                    <button type="button" className="btn btn-secondary" onClick={() => handleStartEdit(project)}>
+                      Editar
+                    </button>
+                    <button type="button" className="btn btn-secondary" onClick={() => handleToggleVisible(project)}>
+                      {project.visible ? 'Ocultar' : 'Exibir'}
+                    </button>
+                    <button type="button" className="btn btn-danger" onClick={() => handleDelete(project.id)}>
+                      Excluir
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
@@ -309,6 +409,79 @@ export function Admin() {
 
         .btn-block {
           width: 100%;
+        }
+
+        .btn-danger {
+          background: transparent;
+          border: 1px solid rgba(220, 38, 38, 0.4);
+          color: #ef4444;
+        }
+
+        .btn-danger:hover {
+          background: rgba(220, 38, 38, 0.1);
+        }
+
+        .form-actions {
+          display: flex;
+          gap: 0.8rem;
+        }
+
+        .list-title {
+          margin-top: 2.5rem;
+          padding-top: 1.8rem;
+          border-top: 1px solid var(--card-border);
+        }
+
+        .empty-list {
+          opacity: 0.7;
+          font-size: 0.9rem;
+        }
+
+        .project-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.8rem;
+          list-style: none;
+          padding: 0;
+        }
+
+        .project-list-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          padding: 0.9rem 1rem;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--card-border);
+        }
+
+        .project-list-info {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+        }
+
+        .visibility-pill {
+          font-size: 0.75rem;
+          font-family: var(--font-mono);
+          padding: 0.15rem 0.55rem;
+          border-radius: 20px;
+        }
+
+        .visibility-pill.visible {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
+        }
+
+        .visibility-pill.hidden {
+          background: rgba(0, 0, 0, 0.08);
+          opacity: 0.8;
+        }
+
+        .project-list-actions {
+          display: flex;
+          gap: 0.5rem;
         }
 
         .alert-box {
