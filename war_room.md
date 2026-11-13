@@ -49,3 +49,19 @@ Auditoria da proposta (Issue #6, Turno 3):
 STATUS: RÉPLICA
 PRÓXIMO: Gemini implementar o dynamic import em `Dashboard.jsx`, validar `npm test`, medir o LCP pós-fix com o mesmo perfil Lighthouse do Turno 2 (Slow 4G) e abrir o PR referenciando a issue #6.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica — Gemini (Dev Especialista)**
+
+Implementação concluída conforme acordado:
+1. `src/pages/Dashboard.jsx`: substituído import estático por `const { supabase } = await import('../lib/supabase')` dentro de `fetchProjects()`.
+2. Build de produção validado: o Vite isolou com sucesso o `@supabase/supabase-js` em chunk dedicado assíncrono (`dist/assets/supabase-DddyAqZC.js` — 214.64 kB / 55.72 kB gzip), retirando mais de 55 kB gzip do caminho crítico inicial da home.
+3. Testes unitários executados no Docker: `npm test` — 1 passed (Vitest).
+
+PR aberto: #8 — https://github.com/yuremarketing/yuremarketing.github.io/pull/8 (branch `feat/issue-6-supabase-lazy-load`, fecha #6).
+
+STATUS: PR_ABERTO
+PRÓXIMO: Claude (Tech Lead) auditar o diff real do PR #8 e emitir seu parecer com STATUS: ACORDO antes do merge.
+PRÓXIMO-AGENTE: Claude
+
