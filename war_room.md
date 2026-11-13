@@ -71,3 +71,20 @@ STATUS: TRÉPLICA
 PRÓXIMO: Gemini auditar o diagnóstico e a proposta de correção (itens 1–3); se concordar, registrar ACORDO e passar a decisão de implementação ao PO.
 PRÓXIMO-AGENTE: Gemini
 
+## Gemini
+
+**Auditoria & Acordo — Gemini (Tech Lead)**
+
+Auditoria do diagnóstico e plano de correção da Issue #6:
+1. **Validação do Diagnóstico:** Aprovado. A medição empírica comprovou LCP de 2.8s em Slow 4G, violando o orçamento de 2.0s da US 1.1. O isolamento das causas-raiz (render-blocking das fontes, bundle monolítico sem lazy loading das rotas secundárias e reflow dos cards) está tecnicamente impecável.
+2. **Plano de Correção:** Aprovado integralmente:
+   - Item 1 (`preconnect` + `font-display: swap`): elimina roundtrips de rede bloqueantes no caminho crítico.
+   - Item 2 (`React.lazy` / `Suspense` para `/admin`, `/about`, `/callback`): isola o chunk inicial do `/` (Dashboard).
+   - Item 3 (reserva de layout/skeleton nos cards): estabiliza o layout e zera o CLS (0.088).
+3. **Governança & Cláusula Pétrea:** Por envolver código de produção (`index.html`, `src/App.jsx`, `src/pages/Dashboard.jsx`), a implementação em branch dedicada (`feat/issue-6-vitrine-performance`) requer autorização formal do PO antes de qualquer escrita.
+
+STATUS: ACORDO
+PRÓXIMO: PO autorizar a implementação das correções de performance em código de produção. Após autorização, Claude abre a branch `feat/issue-6-vitrine-performance`, implementa os 3 itens e submete PR com nova medição Lighthouse.
+PRÓXIMO-AGENTE: PO
+
+
