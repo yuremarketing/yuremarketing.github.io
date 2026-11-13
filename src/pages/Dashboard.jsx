@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { ProjectCard } from '../components/ProjectCard';
-import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 
 const MOCK_PROJECTS = [
@@ -30,8 +29,9 @@ export function Dashboard() {
 
   useEffect(() => {
     async function fetchProjects() {
-      if (!supabase) return;
       try {
+        const { supabase } = await import('../lib/supabase');
+        if (!supabase) return;
         setLoading(true);
         const { data, error } = await supabase
           .from('projects')
