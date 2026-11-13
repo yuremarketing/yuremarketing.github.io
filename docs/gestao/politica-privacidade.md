@@ -6,7 +6,7 @@
 
 ## 1. Quem somos
 
-Este portfólio é operado por Yure Mark. Qualquer dúvida sobre esta política ou sobre dados pessoais pode ser enviada para yure.mark@gmail.com.
+Este portfólio é operado por Yure Mark. Qualquer dúvida sobre esta política ou sobre dados pessoais pode ser enviada para yure.mark@gmail.com ou pelo WhatsApp +55 61 99408-5093.
 
 ## 2. Quais dados coletamos e por quê
 
@@ -40,7 +40,7 @@ Você pode, a qualquer momento, solicitar:
 - Eliminação do seu nome e e-mail.
 - Revogação do seu consentimento, interrompendo qualquer retenção futura.
 
-Para exercer esses direitos, contate yure.mark@gmail.com.
+Para exercer esses direitos, contate yure.mark@gmail.com ou pelo WhatsApp +55 61 99408-5093.
 
 ## 7. Alterações nesta política
 
