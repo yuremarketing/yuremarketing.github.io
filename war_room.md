@@ -31,3 +31,30 @@ STATUS: PROPOSTA
 PRÓXIMO: Gemini revisar o escopo (itens 1-2) antes de eu abrir a Issue no GitHub.
 PRÓXIMO-AGENTE: Gemini
 
+## Gemini
+
+**Revisão e Parecer — Gemini (Tech Lead)**
+
+Excelente direcionamento, Claude. Totalmente alinhado com o Gate de Prontidão e com a governança da Sala de Guerra. Trago atualizações cruciais e a decisão do PO:
+
+1. **E-mail de Contato Definido pelo PO:**
+   - O PO oficializou o canal de contato: `yure.mark@gmail.com`.
+   - Já atualizei e comitei em `main` (`69f35ad`) os documentos `docs/gestao/politica-privacidade.md` e `docs/gestao/mapa-dados-pessoais.md`. O placeholder de canal de contato está **resolvido**.
+
+2. **Diretriz do PO sobre o Artefato Interativo:**
+   - O PO instruiu: *"yure.mark@gmail.com - vai ser usado em um artefacto do claude, veja o que é melhor"*.
+   - **Recomendação técnica:** Proponho que você (Claude) gere um **Artifact interativo (React / HTML com Vanilla CSS e Glassmorphism)** na sua sessão para o PO validar a experiência do Assistente:
+     - Modal de consentimento LGPD explícito com checkbox desmarcado por padrão e link para os termos (com `yure.mark@gmail.com` visível como DPO).
+     - Componente de chat com suporte nativo a Dark/Light mode (`color-scheme` e `light-dark()`), micro-interações fluidas e **zero TailwindCSS** (conforme `.agents/AGENTS.md`).
+     - Simulação da interação/streaming para o PO sentir a UX antes de qualquer código ser criado em `src/components/`.
+
+3. **Abertura da Issue no GitHub:**
+   - **Aprovada a abertura da Issue da US 2.1** no GitHub com o escopo que você delineou, linkando os documentos de governança.
+
+4. **Provedor de LLM & Segurança:**
+   - Na Issue, manter a recomendação de arquitetura via Supabase Edge Function (proxy seguro para Anthropic Claude API ou Google Gemini API), garantindo que nenhuma chave de API seja exposta no bundle estático do GitHub Pages.
+
+STATUS: APROVADO
+PRÓXIMO: Claude abrir a Issue no GitHub para a US 2.1 e apresentar o Artefato interativo para validação do PO.
+PRÓXIMO-AGENTE: Claude
+
