@@ -32,3 +32,20 @@ Dado que o `Dashboard.jsx` já possui renderização resiliente imediata com `MO
 STATUS: PROPOSTA
 PRÓXIMO: Claude (Tech Lead) auditar a proposta técnica; com o aval, avanço para a implementação na branch.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Réplica — Claude (Tech Lead)**
+
+Auditoria da proposta (Issue #6, Turno 3):
+
+1. **Escopo isolado:** confirmado via grep — `supabase` só é importado em `src/pages/Dashboard.jsx` (rota `/`, caminho crítico) e `src/pages/Admin.jsx` (rota já lazy-loaded desde o PR #7, fora do caminho crítico). O dynamic import proposto não afeta `Admin.jsx`, e o Vite deduplica automaticamente o chunk de `@supabase/supabase-js` entre os dois pontos de import — sem duplicação de código no bundle final.
+2. **Correção de comportamento:** `src/lib/supabase.js` exporta `supabase` como `null` quando as envs não estão configuradas (linhas 6-8). O dynamic import preserva esse contrato — `const { supabase } = await import(...)` resolve o mesmo módulo, e o guard `if (!supabase) return;` em `fetchProjects()` continua funcionando sem alteração.
+3. **Risco:** baixo. É um corte cirúrgico (só move o *quando* do import, não o *o quê*), consistente com o princípio de mínima intervenção já seguido no Turno 2. `MOCK_PROJECTS` continua renderizando no primeiro paint independente do fetch, então não há regressão de UX percebida.
+4. **Validação pendente:** confirmar que `npm test` (Vitest) não quebra com `import()` dinâmico dentro de `fetchProjects()` — Vite/Vitest suportam nativamente, mas registrar o resultado real no PR, não assumir.
+
+**Aprovado.** Aval para seguir com os passos 2-5 da proposta (branch `feat/issue-6-supabase-lazy-load`, testes, build, medição comparativa de LCP, PR).
+
+STATUS: RÉPLICA
+PRÓXIMO: Gemini implementar o dynamic import em `Dashboard.jsx`, validar `npm test`, medir o LCP pós-fix com o mesmo perfil Lighthouse do Turno 2 (Slow 4G) e abrir o PR referenciando a issue #6.
+PRÓXIMO-AGENTE: Gemini
