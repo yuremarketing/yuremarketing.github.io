@@ -1,23 +1,26 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './hooks/useTheme';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './pages/Dashboard';
-import { About } from './pages/About';
-import { Admin } from './pages/Admin';
-import { Callback } from './pages/Callback';
+
+const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
+const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })));
+const Callback = lazy(() => import('./pages/Callback').then((m) => ({ default: m.Callback })));
 
 export function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/callback" element={<Callback />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/callback" element={<Callback />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ThemeProvider>
   );
