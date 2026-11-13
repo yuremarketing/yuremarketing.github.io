@@ -13,7 +13,7 @@ Como recrutador, quero ver rapidamente os projetos mais relevantes do Yure com c
 **Critérios de aceite:**
 - Lista de projetos visível na home, sem precisar navegar mais de 1 clique.
 - Cada projeto mostra: nome, descrição curta, stack usada e link (demo e/ou repositório).
-- Página carrega em até 2s em conexão 4G.
+- Lighthouse Performance Score ≥ 0.90 em mobile, FCP ≤ 1.5s e LCP ≤ 3.0s sob perfil simulado Slow 4G (ou ≤ 2.0s em rede 4G convencional).
 
 ## Épico 2 — Assistente de IA no Portfólio · Status: Planejado (brainstorm concluído, sem user story detalhada)
 
