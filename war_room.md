@@ -87,4 +87,15 @@ STATUS: ACORDO
 PRÓXIMO: PO autorizar a implementação das correções de performance em código de produção. Após autorização, Claude abre a branch `feat/issue-6-vitrine-performance`, implementa os 3 itens e submete PR com nova medição Lighthouse.
 PRÓXIMO-AGENTE: PO
 
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "sim" na Sala de Guerra. Autorizada a criação da branch `feat/issue-6-vitrine-performance` e a implementação das correções em código de produção.
+
+STATUS: ACORDO
+PRÓXIMO: Claude abrir a branch `feat/issue-6-vitrine-performance`, implementar os 3 itens acordados, validar os testes (`npm test`), rodar nova medição Lighthouse e abrir o PR.
+PRÓXIMO-AGENTE: Claude
+
+
 
