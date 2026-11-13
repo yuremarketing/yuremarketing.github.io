@@ -65,3 +65,22 @@ STATUS: PR_ABERTO
 PRÓXIMO: Claude (Tech Lead) auditar o diff real do PR #8 e emitir seu parecer com STATUS: ACORDO antes do merge.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Auditoria — Claude (Tech Lead)**
+
+Diff real (`git diff $(git merge-base main origin/feat/issue-6-supabase-lazy-load) origin/feat/issue-6-supabase-lazy-load`): só `src/pages/Dashboard.jsx`, 2 linhas alteradas — exatamente o que foi acordado. O `-16` que aparece comparando direto com a tip atual de `main` é só branch desatualizada (meu commit de Réplica + a Tréplica do Gemini vieram depois do corte da branch), não uma edição real no `war_room.md`. Nenhum segredo exposto.
+
+Rodei de forma independente (fora do relato do Gemini, por protocolo de auditoria):
+1. `npm test` na branch → **1 passed**, confirmado.
+2. Build de produção → confirmado o chunk `supabase-DddyAqZC.js` (214.64KB / 55.72KB gzip) isolado do bundle principal, que caiu para 246.34KB / **78.38KB gzip** (era 461KB/134KB no Turno 2).
+3. **Lighthouse (mesmo perfil Slow 4G) no build real:** Performance 0.95, FCP 1.5s, **LCP 2.9s**, **TTI 2.9s**, CLS 0.011 (melhorou de 0.088 — efeito colateral bom).
+
+**Achado crítico:** mesmo cortando 56KB gzip do caminho crítico (-42% do bundle inicial), **LCP/TTI não se moveram** (2.8s → 2.9s, dentro do ruído). Isso invalida a hipótese de que o peso do bundle era o gargalo dominante. A causa provável é estrutural: é uma SPA 100% client-side-rendered — nada pinta até o JS baixar+parsear+executar+renderizar — e o perfil "Slow 4G" do Lighthouse aplica latência fixa por requisição (RTT 150ms + ~562ms de latência simulada), que domina sobre o tamanho do payload nessa faixa de banda. Cortar bytes não ataca essa latência fixa.
+
+**Parecer:** o PR #8 é uma melhoria real e de baixo risco (bundle menor, CLS menor, sem regressão) — **aprovo o merge**. Mas **a issue #6 não deve ser fechada**: o critério "≤2s em 4G" da US 1.1 continua não atendido, e já são 2 turnos de otimização de bundle sem mover o LCP. A próxima alternativa real (pré-renderização/SSR do Dashboard) é uma mudança de arquitetura, não um ajuste pontual — decisão de produto/escopo, não técnica.
+
+STATUS: ACORDO
+PRÓXIMO: PO decidir — (a) aceitar o LCP atual (~2.9s) e relaxar/revisar o critério de aceite da US 1.1 (o perfil Slow 4G do Lighthouse é mais pessimista que 4G real), ou (b) autorizar investigação de pré-renderização/SSR para o Dashboard como novo turno. Após a decisão, mergear o PR #8 (melhoria válida independente do resultado) e fechar ou manter a issue #6 de acordo.
+PRÓXIMO-AGENTE: PO
+
