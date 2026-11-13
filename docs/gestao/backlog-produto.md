@@ -15,16 +15,24 @@ Como recrutador, quero ver rapidamente os projetos mais relevantes do Yure com c
 - Cada projeto mostra: nome, descrição curta, stack usada e link (demo e/ou repositório).
 - Lighthouse Performance Score ≥ 0.90 em mobile, FCP ≤ 1.5s e LCP ≤ 3.0s sob perfil simulado Slow 4G (ou ≤ 2.0s em rede 4G convencional).
 
-## Épico 2 — Assistente de IA no Portfólio · Status: Planejado (brainstorm concluído, sem user story detalhada)
+## Épico 2 — Assistente de IA no Portfólio · Status: Planejado (US 2.1 detalhada, bloqueada para desenvolvimento até aprovação do PO)
 
-Visitante se cadastra (nome + e-mail, ou login via LinkedIn OAuth) e conversa com uma LLM que responde sobre o Yure e seus projetos.
+### User Story 2.1
+Como visitante do portfólio, quero me cadastrar rapidamente (nome + e-mail, ou login via LinkedIn) e conversar com um assistente de IA sobre o Yure e seus projetos, para decidir se quero entrar em contato sem precisar ler tudo manualmente.
 
-**Pontos do brainstorm:**
-- Conversa não persiste por padrão; e-mail de cadastro retido só enquanto necessário pro contato.
-- Consentimento explícito obrigatório (checkbox não pré-marcado) no cadastro.
-- Se usar LLM via API externa, o conteúdo da conversa sai do servidor — precisa constar na política de privacidade.
+**Critérios de aceite:**
+- Antes de iniciar a conversa, o visitante vê uma caixa de consentimento **não pré-marcada**; só é possível conversar depois de marcá-la explicitamente.
+- Cadastro aceita nome + e-mail OU login via LinkedIn OAuth, sem exigir ambos.
+- O histórico da conversa vive apenas em memória do navegador durante a sessão — **não é persistido no Supabase por padrão**. Recarregar a página limpa a conversa.
+- Nome e e-mail só são retidos no servidor enquanto necessários para viabilizar um contato de retorno; não há uso para marketing sem consentimento separado.
+- O visitante tem acesso visível a um link para a política de privacidade (`docs/gestao/politica-privacidade.md`, quando publicada) antes de marcar o consentimento.
 
-⚠️ Depende de mapa de dados pessoais + política de privacidade (ver R01 na matriz de riscos).
+**Dependências (ver R01 na matriz de riscos):**
+- `docs/gestao/mapa-dados-pessoais.md` — mapa de dados pessoais, redigido.
+- `docs/gestao/politica-privacidade.md` — rascunho redigido, **pendente de aprovação do PO** antes de ir para produção como página pública `/privacidade`.
+- Escolha do provedor de LLM e confirmação dos termos de retenção/treinamento desse provedor.
+
+⚠️ **US 2.1 pode ser refinada agora, mas não entra em desenvolvimento (branch/código de produção) até o PO aprovar o texto da política de privacidade e o provedor de LLM estar confirmado.**
 
 ## Épico 3 — Área Privada Cliente/Visitante · Status: Ideia (não detalhado)
 

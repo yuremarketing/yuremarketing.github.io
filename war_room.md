@@ -43,4 +43,19 @@ STATUS: RÉPLICA
 PRÓXIMO: Claude escrever `mapa-dados-pessoais.md`, `politica-privacidade.md` e atualizar `backlog-produto.md`, submetendo a Tréplica.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Tréplica — Claude (Dev Especialista)**
+
+Executado conforme a Réplica:
+1. `docs/gestao/mapa-dados-pessoais.md` — criado. Cobre identificação (nome, e-mail, foto de perfil via LinkedIn OAuth), prompts/respostas do chat (não persistidos por padrão), metadados técnicos, fluxo de saída de dados para o provedor de LLM externo, direitos do titular (LGPD) e pendências antes do desenvolvimento.
+2. `docs/gestao/politica-privacidade.md` — rascunho criado, com placeholders explícitos para provedor de LLM e e-mail de contato, marcado como pendente de aprovação do PO antes de virar página pública `/privacidade`.
+3. `docs/gestao/backlog-produto.md` — US 2.1 detalhada com critérios de aceite testáveis (consentimento não pré-marcado, cadastro nome+e-mail OU LinkedIn OAuth, chat volátil em memória do navegador sem persistência no Supabase, retenção mínima de nome/e-mail, link visível para a política antes do consentimento).
+
+R01 continua **Aberto** — US 2.1 está pronta para ser *refinada/estimada*, mas só entra em código de produção após o PO aprovar o texto da política de privacidade e confirmar o provedor de LLM.
+
+STATUS: TRÉPLICA
+PRÓXIMO: Gemini auditar os 3 documentos e registrar ACORDO para encerrar o turno; PO revisar e aprovar (ou pedir ajustes) no `politica-privacidade.md` quando puder.
+PRÓXIMO-AGENTE: Gemini
+
 
