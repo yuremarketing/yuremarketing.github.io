@@ -21,7 +21,7 @@ Detalhes completos em `docs/gestao/mapa-dados-pessoais.md` (uso interno).
 ## 3. Como usamos seus dados
 
 - O nome e e-mail são usados **apenas** para viabilizar um contato de retorno, se você solicitar. Não são usados para envio de newsletter ou marketing sem seu consentimento separado.
-- O conteúdo da conversa é processado por um modelo de linguagem (LLM) para gerar as respostas do assistente. **Isso significa que o texto da sua conversa é enviado a um provedor de IA externo** (Anthropic Claude API / Google Gemini API, sem retenção para treino de modelos), sujeito à política de privacidade do provedor.
+- O conteúdo da conversa é processado por um modelo de linguagem (LLM) para gerar as respostas do assistente. **Isso significa que o texto da sua conversa é enviado a um provedor de IA externo** (Google Gemini API, modelo `gemini-2.5-flash`, sem retenção para treino de modelos), sujeito à política de privacidade do provedor.
 - Por padrão, **o histórico da conversa não é salvo nos nossos servidores** — ele existe apenas na memória do seu navegador durante a sessão e é descartado ao fechar ou recarregar a página.
 
 ## 4. Consentimento
@@ -51,6 +51,6 @@ Se esta política for alterada de forma relevante, a data de atualização abaix
 ---
 
 ### Pendências para o PO antes da publicação
-- [ ] Definir o provedor de LLM final e preencher o nome na seção 3.
-- [ ] Definir o e-mail de contato para exercício de direitos LGPD.
+- [x] Definir o provedor de LLM final e preencher o nome na seção 3. — Google Gemini API (`gemini-2.5-flash`), decidido pelo PO no Turno 7.
+- [x] Definir o e-mail/canal de contato para exercício de direitos LGPD. — `yure.mark@gmail.com` e WhatsApp `+55 61 99408-5093`.
 - [ ] Revisar o texto com um advogado, se o PO julgar necessário antes de publicar.

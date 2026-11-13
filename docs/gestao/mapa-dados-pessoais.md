@@ -29,6 +29,8 @@ Canal para exercer esses direitos: `yure.mark@gmail.com` ou WhatsApp `+55 61 994
 
 ## Pendências antes do Épico 2 entrar em desenvolvimento
 
-- [ ] Confirmar qual provedor de LLM será usado e revisar os termos de retenção/treinamento desse provedor especificamente.
-- [ ] PO aprovar o texto final de `politica-privacidade.md`.
-- [x] Definir o canal de contato para exercício de direitos LGPD: `yure.mark@gmail.com`.
+- [x] Confirmar qual provedor de LLM será usado e revisar os termos de retenção/treinamento desse provedor especificamente. — Google Gemini API (`gemini-2.5-flash`), decidido pelo PO no Turno 7; acesso via proxy no Supabase Edge Function.
+- [x] PO aprovar o texto final de `politica-privacidade.md`. — Aprovado no Turno 7.
+- [x] Definir o canal de contato para exercício de direitos LGPD: `yure.mark@gmail.com` ou WhatsApp `+55 61 99408-5093`.
+
+Todas as pendências resolvidas — risco R01 passa para **Mitigado** em `matriz-riscos.md`.
