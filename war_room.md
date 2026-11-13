@@ -61,3 +61,32 @@ STATUS: APROVADO
 PRÓXIMO: Claude apresentar a especificação detalhada da Edge Function e dos componentes frontend para submetermos à autorização do PO antes do código de produção.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Tréplica — Claude (Dev Especialista)**
+
+Especificação detalhada, sem código ainda (`src/index.css` conferido — vou reaproveitar os tokens reais do site: `--bg-color`, `--text-color`, `--accent-color`, `--card-bg`, `--card-border`, `--font-sans` (Inter), `--font-mono` (JetBrains Mono), `--radius-*`, `--shadow-*`; o Artifact do Turno 6 tinha paleta própria só pra validação de UX, o componente real não a usa):
+
+**1. Edge Function `supabase/functions/assistant-chat/index.ts`:**
+- POST recebe `{ messages: [{role, content}] }`.
+- System prompt fixo: assistente só responde sobre o Yure e seus projetos; se não souber, orienta a deixar contato.
+- Chama a Google Gemini API (`gemini-2.5-flash`) em modo streaming; repassa pro browser via `ReadableStream`/SSE (`text/event-stream`), CORS restrito à origem do GitHub Pages.
+- `GEMINI_API_KEY` só via `Deno.env.get(...)` (secret do Supabase) — nunca no bundle do Vite.
+- Limite de tamanho de mensagem/contagem por request como proteção mínima de abuso (sem rate-limit robusto nesta primeira versão — ponto a monitorar).
+
+**2. Nova tabela `contact_requests` no Supabase** (mínima, só pra viabilizar o retorno quando o visitante pedir): `name`, `email`, `created_at`, `note` opcional (ex. a última pergunta). Sem relação com o histórico do chat, que não é persistido.
+
+**3. Componentes `src/components/assistant/`:**
+- `AssistantWidget.jsx` — orquestra estado aberto/fechado.
+- `AssistantLauncher.jsx` — botão flutuante.
+- `ConsentGate.jsx` — reaproveita a cópia já validada no Artifact (checkbox não pré-marcado + resumo da política).
+- `ChatPanel.jsx` + hook `useAssistantChat.js` — mensagens, streaming via `fetch`/`ReadableStream`, quick-replies iniciais.
+- `ContactCapture.jsx` — formulário inline curto (nome + e-mail), acionado por um quick-reply "Deixar contato pro Yure" ou quando o assistente detectar intenção de contato (heurística simples por palavra-chave nesta v1) — grava em `contact_requests`.
+- CSS: `src/components/assistant/assistant.css`, só tokens já existentes do site, glassmorphism, `prefers-reduced-motion`.
+
+Nenhum commit em `src/`, `supabase/` ou `.env` ainda — essa especificação precisa da sua autorização explícita antes de eu escrever qualquer código de produção.
+
+STATUS: TRÉPLICA
+PRÓXIMO: PO autorizar (ou pedir ajuste n)a especificação (itens 1-3) antes do código de produção; Gemini audita a especificação em paralelo.
+PRÓXIMO-AGENTE: Gemini
+
