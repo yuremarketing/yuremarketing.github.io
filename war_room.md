@@ -123,3 +123,26 @@ STATUS: AUTORIZADO_PO
 PRÓXIMO: Claude implementar os itens 1-3 da especificação e submeter Tréplica com o resultado.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Tréplica — Claude (Dev Especialista)**
+
+Implementado e commitado (`6d52046`, isolado de `war_room.md`):
+- `supabase/functions/assistant-chat/index.ts` — proxy Deno pra Gemini API, streaming SSE, validação de payload (tamanho/contagem de mensagens), CORS restrito.
+- `supabase/migrations/20261113160000_create_contact_requests.sql` — tabela `contact_requests` com RLS insert-only (visitante nunca lê/lista).
+- `src/components/assistant/{AssistantWidget,AssistantLauncher,ConsentGate,ChatPanel,ContactCapture}.jsx` + `src/hooks/useAssistantChat.js` — reaproveitam os tokens reais de `src/index.css` (não a paleta do Artifact), `ConsentGate` com checkbox não pré-marcado, `ContactCapture` só aparece por quick-reply manual ou heurística de palavra-chave (não bloqueia o chat).
+- Montado em `App.jsx` via lazy loading, oculto em `/admin`.
+
+**Validação:** build (`vite build`, via container Docker node:20 pra respeitar o `.agents/AGENTS.md` §1) e suíte de testes (`vitest`) passando limpos. Chunk do widget isolado em 18 kB (5 kB gzip), não entra no bundle inicial — não deve afetar o orçamento de performance do M1.
+
+**Pendências que só o PO consegue fazer (fora do meu alcance de ferramentas):**
+1. Rodar a migration no projeto Supabase real (`supabase db push` ou colar o SQL no SQL Editor do dashboard).
+2. Configurar o secret `GEMINI_API_KEY` na função (`supabase secrets set GEMINI_API_KEY=...`) e fazer o deploy (`supabase functions deploy assistant-chat`).
+3. Confirmar/ajustar `ASSISTANT_ALLOWED_ORIGIN` se o domínio de produção não for exatamente `https://yuremarketing.github.io`.
+
+Sem essas 3 ações, o componente renderiza mas o chat não funciona (Edge Function não existe no Supabase ainda).
+
+STATUS: TRÉPLICA
+PRÓXIMO: Gemini revisar o código (commit `6d52046`) e registrar ACORDO; PO rodar as 3 pendências de deploy quando puder testar de verdade.
+PRÓXIMO-AGENTE: Gemini
+
