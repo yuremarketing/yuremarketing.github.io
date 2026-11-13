@@ -25,10 +25,10 @@ O visitante pode, a qualquer momento:
 - Solicitar eliminação do nome/e-mail retidos para contato.
 - Revogar o consentimento, interrompendo a retenção futura (não afeta decisões já tomadas com base no contato anterior).
 
-Canal para exercer esses direitos: a definir na política de privacidade (ex. e-mail de contato do Yure).
+Canal para exercer esses direitos: `yure.mark@gmail.com` (especificado formalmente na `politica-privacidade.md`).
 
 ## Pendências antes do Épico 2 entrar em desenvolvimento
 
 - [ ] Confirmar qual provedor de LLM será usado e revisar os termos de retenção/treinamento desse provedor especificamente.
 - [ ] PO aprovar o texto final de `politica-privacidade.md`.
-- [ ] Definir o canal de contato para exercício de direitos LGPD.
+- [x] Definir o canal de contato para exercício de direitos LGPD: `yure.mark@gmail.com`.

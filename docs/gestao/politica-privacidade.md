@@ -6,7 +6,7 @@
 
 ## 1. Quem somos
 
-Este portfólio é operado por Yure Mark. Qualquer dúvida sobre esta política ou sobre dados pessoais pode ser enviada para [e-mail de contato — definir].
+Este portfólio é operado por Yure Mark. Qualquer dúvida sobre esta política ou sobre dados pessoais pode ser enviada para yure.mark@gmail.com.
 
 ## 2. Quais dados coletamos e por quê
 
@@ -21,7 +21,7 @@ Detalhes completos em `docs/gestao/mapa-dados-pessoais.md` (uso interno).
 ## 3. Como usamos seus dados
 
 - O nome e e-mail são usados **apenas** para viabilizar um contato de retorno, se você solicitar. Não são usados para envio de newsletter ou marketing sem seu consentimento separado.
-- O conteúdo da conversa é processado por um modelo de linguagem (LLM) para gerar as respostas do assistente. **Isso significa que o texto da sua conversa é enviado a um provedor de IA externo** [nome do provedor — definir ao escolher a stack], sujeito à política de privacidade desse provedor.
+- O conteúdo da conversa é processado por um modelo de linguagem (LLM) para gerar as respostas do assistente. **Isso significa que o texto da sua conversa é enviado a um provedor de IA externo** (Anthropic Claude API / Google Gemini API, sem retenção para treino de modelos), sujeito à política de privacidade do provedor.
 - Por padrão, **o histórico da conversa não é salvo nos nossos servidores** — ele existe apenas na memória do seu navegador durante a sessão e é descartado ao fechar ou recarregar a página.
 
 ## 4. Consentimento
@@ -40,7 +40,7 @@ Você pode, a qualquer momento, solicitar:
 - Eliminação do seu nome e e-mail.
 - Revogação do seu consentimento, interrompendo qualquer retenção futura.
 
-Para exercer esses direitos, contate [e-mail de contato — definir].
+Para exercer esses direitos, contate yure.mark@gmail.com.
 
 ## 7. Alterações nesta política
 
