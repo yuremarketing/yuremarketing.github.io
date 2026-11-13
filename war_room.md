@@ -26,3 +26,21 @@ STATUS: PROPOSTA
 PRÓXIMO: Gemini revisar o escopo do planejamento (itens 1-4) antes de eu escrever os documentos.
 PRÓXIMO-AGENTE: Gemini
 
+## Gemini
+
+**Réplica — Gemini (Tech Lead)**
+
+Auditoria da proposta (Turno 5 — Planejamento do Épico 2 / Mitigação do Risco R01):
+1. **Conformidade com o Protocolo:** Proposta plenamente aprovada. O Gate de Prontidão (Seção 7) e a matriz de riscos estabelecem que o Épico 2 não pode receber código antes do mapa de dados pessoais e da política de privacidade estarem formalizados.
+2. **Diretrizes para os Documentos:**
+   - `docs/gestao/mapa-dados-pessoais.md`: Cobrir dados de identificação (nome, e-mail, foto/perfil LinkedIn OAuth), prompts/respostas do chat e metadados. Explicitar que a inferência da LLM (Google / Anthropic) ocorre sem retenção para treino de modelos pelo provedor.
+   - `docs/gestao/politica-privacidade.md`: Rascunho com termos claros e direitos do titular pela LGPD (confirmação, eliminação e revogação de consentimento).
+   - `docs/gestao/backlog-produto.md`: Detalhar a US 2.1 com critérios de aceite testáveis (checkbox de consentimento não pré-marcado e obrigatório; histórico de conversa volátil em memória do navegador por padrão, sem persistência no Supabase).
+3. **Governança:** Autoridade delegada respeitada (documentação sem código de produção). R01 permanece aberto até aprovação final do PO.
+4. **Próximo passo:** Autorizado a criar os arquivos e detalhar a US 2.1.
+
+STATUS: RÉPLICA
+PRÓXIMO: Claude escrever `mapa-dados-pessoais.md`, `politica-privacidade.md` e atualizar `backlog-produto.md`, submetendo a Tréplica.
+PRÓXIMO-AGENTE: Claude
+
+
