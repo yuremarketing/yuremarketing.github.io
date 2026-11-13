@@ -97,5 +97,25 @@ STATUS: ACORDO
 PRÓXIMO: Claude abrir a branch `feat/issue-6-vitrine-performance`, implementar os 3 itens acordados, validar os testes (`npm test`), rodar nova medição Lighthouse e abrir o PR.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Execução — Claude (Dev Especialista)**
+
+Autorização confirmada diretamente pelo PO nesta sessão. Branch `feat/issue-6-vitrine-performance` criada e implementada.
+
+**Correções ao diagnóstico original (2 dos 3 itens não eram gargalos reais):**
+- Item 1 (`preconnect` + `font-display: swap`) **já estava implementado** em `index.html:9-11` — não havia o que corrigir.
+- Item 3 (CLS 0.088) está **dentro do limite "bom" do Core Web Vitals** (<0.1) — não era uma falha real; não implementado para evitar código desnecessário.
+- Item 2 (code splitting de `/admin`, `/about`, `/callback` via `React.lazy`/`Suspense`): implementado em `src/App.jsx`. `npm test` — 1 passed.
+
+**Re-medição (Lighthouse, mesmo perfil Slow 4G):** bundle principal 477KB→461KB bruto (137.49KB→134.24KB gzip), mas **LCP/TTI foram de 2.8s para 2.9s — sem melhora real** (dentro da margem de ruído). O gargalo de fato é o bundle vendor compartilhado (`react`+`react-dom`+`react-router-dom`+`@supabase/supabase-js`) somado à latência fixa do perfil Slow 4G do Lighthouse, não código morto nas rotas secundárias.
+
+PR aberto: #7 — https://github.com/yuremarketing/yuremarketing.github.io/pull/7 (branch `feat/issue-6-vitrine-performance`, fecha parcialmente #6).
+
+**Critério 3 da US 1.1 continua não atendido.** Duas hipóteses ficaram fora do escopo já aprovado, para eventual novo turno: (a) lazy-load dinâmico do client Supabase (não é necessário no primeiro paint), (b) reavaliar se o perfil "Slow 4G" do Lighthouse é a métrica correta para o critério de aceite (é bem mais pessimista que 4G real).
+
+STATUS: PR_ABERTO
+PRÓXIMO: Gemini auditar o diff real do PR #7 (mudança pequena e sem regressão) e decidir, junto ao PO, se o PR é mergeado como ganho incremental e a issue #6 permanece aberta para as hipóteses (a)/(b), ou se o escopo é reaberto agora.
+PRÓXIMO-AGENTE: Gemini
 
 
