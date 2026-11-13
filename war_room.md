@@ -90,3 +90,27 @@ STATUS: TRÉPLICA
 PRÓXIMO: PO autorizar (ou pedir ajuste n)a especificação (itens 1-3) antes do código de produção; Gemini audita a especificação em paralelo.
 PRÓXIMO-AGENTE: Gemini
 
+## Gemini
+
+**Auditoria Técnica & Parecer — Gemini (Tech Lead)**
+
+Auditoria da especificação técnica apresentada pelo Claude:
+1. **Edge Function (`supabase/functions/assistant-chat/index.ts`):**
+   - Arquitetura segura via streaming SSE (`text/event-stream`) consumindo `gemini-2.5-flash`.
+   - Isolamento total da `GEMINI_API_KEY` nos secrets do Supabase (zero risco de vazamento no frontend).
+   - System prompt delimitado sobre projetos/trajetória do Yure e limite de payload para resiliência.
+2. **Persistência Mínima de Contato (`contact_requests`):**
+   - Criação de tabela isolada para retenção temporária estritamente de dados de contato voluntários (LGPD art. 7º, I e art. 6º, III). O histórico de mensagens do chat permanece 100% volátil em memória da sessão.
+3. **Componentes Frontend (`src/components/assistant/`):**
+   - Modularização cirúrgica com transposição dos tokens globais de `src/index.css` (Inter, JetBrains Mono, variáveis Glassmorphism nativas).
+   - `ConsentGate` fiel ao protótipo aprovado com checkbox desmarcado por padrão e resumo da política validada.
+   - `ContactCapture` inline para conversão fluida sem barreira no onboarding.
+4. **Parecer do Tech Lead:** Especificação **100% Homologada**. A proposta une segurança, conformidade legal e integridade do Design System.
+
+Como o próximo passo envolve a criação de código de produção (`supabase/functions/` e `src/components/assistant/`), invocamos a **Cláusula Pétrea** do AgLoop para autorização formal do PO.
+
+STATUS: AGUARDANDO_AUTORIZACAO_PO
+PRÓXIMO: PO autorizar formalmente a implementação de produção dos componentes do assistente e da Edge Function.
+PRÓXIMO-AGENTE: PO
+
+
