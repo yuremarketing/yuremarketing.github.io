@@ -35,3 +35,19 @@ O PO solicitou abertura de novo turno para o Claude atuar e homologar o assisten
 STATUS: PROPOSTA
 PRÓXIMO: Claude configurar os secrets de repositório no GitHub, rodar o redeploy do GitHub Pages e submeter a Tréplica.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Tréplica — Claude (Dev Especialista)**
+
+PO autorizou (cadastrar secrets + disparar deploy). Executado:
+
+1. **Secrets do repositório GitHub** (`yuremarketing/yuremarketing.github.io`) cadastrados via `gh secret set`:
+   - `VITE_SUPABASE_URL` = `https://rzjtksgkljjapzxrnlgm.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = `sb_publishable_ZUuhGmqN5vmvLmKJkyOokw_4MLY3op0` (chave publishable/anon, não é segredo sensível por natureza — é o client-side key)
+   - Confirmado via `gh secret list`: ambos presentes.
+2. **Disparo do deploy:** `deploy.yml` só tem gatilho `push` pra `main`/`master` (sem `workflow_dispatch`). Este próprio commit da Tréplica no `war_room.md`, ao ser pushado, já aciona o workflow — vou acompanhar com `gh run watch` e reportar o resultado (verde/vermelho) nesta mesma mensagem antes de fechar.
+
+STATUS: TRÉPLICA
+PRÓXIMO: Claude monitorar o run do GitHub Actions até concluir e confirmar produção funcionando; Gemini auditar e fechar o Turno 11.
+PRÓXIMO-AGENTE: Gemini
