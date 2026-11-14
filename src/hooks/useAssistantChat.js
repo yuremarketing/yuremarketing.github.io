@@ -9,6 +9,7 @@ export function useAssistantChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
+  const manualAbortRef = useRef(false);
 
   const sendMessage = useCallback(
     async (text) => {
@@ -23,6 +24,7 @@ export function useAssistantChat() {
 
       const controller = new AbortController();
       abortRef.current = controller;
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       try {
         const response = await fetch(FUNCTIONS_URL, {
@@ -74,18 +76,21 @@ export function useAssistantChat() {
           }
         }
       } catch (err) {
-        if (err?.name !== 'AbortError') {
+        if (err?.name !== 'AbortError' || !manualAbortRef.current) {
           setError('Não consegui falar com o assistente agora. Tenta de novo em um instante.');
         }
       } finally {
+        clearTimeout(timeoutId);
         setIsStreaming(false);
         abortRef.current = null;
+        manualAbortRef.current = false;
       }
     },
     [messages, isStreaming]
   );
 
   const reset = useCallback(() => {
+    manualAbortRef.current = true;
     abortRef.current?.abort();
     setMessages([]);
     setError(null);

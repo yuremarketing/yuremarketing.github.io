@@ -69,17 +69,30 @@ Deno.serve(async (req) => {
 
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
 
-  const geminiResponse = await fetch(geminiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents,
-    }),
-  });
+  const GEMINI_TIMEOUT_MS = 20000;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), GEMINI_TIMEOUT_MS);
+
+  let geminiResponse: Response;
+  try {
+    geminiResponse = await fetch(geminiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents,
+      }),
+      signal: timeoutController.signal,
+    });
+  } catch (err) {
+    console.error("Gemini API fetch falhou ou excedeu o timeout", err);
+    return jsonError("Tempo esgotado ao falar com o assistente. Tenta de novo em um instante.", 504);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!geminiResponse.ok || !geminiResponse.body) {
     const errText = await geminiResponse.text().catch(() => "");
