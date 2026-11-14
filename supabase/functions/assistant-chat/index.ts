@@ -3,7 +3,7 @@
 // never reaches the static GitHub Pages bundle.
 
 const ALLOWED_ORIGIN = Deno.env.get("ASSISTANT_ALLOWED_ORIGIN") ?? "https://yuremarketing.github.io";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-1.5-flash";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 2000;
 
