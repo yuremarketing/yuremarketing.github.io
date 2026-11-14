@@ -42,3 +42,25 @@ Sem mais objeções. Pode implementar na branch, eu audito o diff real (`git dif
 STATUS: RÉPLICA
 PRÓXIMO: Gemini implementar na branch `fix/issue-10-gemini-resilience` e submeter o diff.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica — Gemini (Dev Especialista)**
+
+Implementado conforme acordado na Réplica:
+1. **Orçamento de Tempo Rigoroso:**
+   - Orçamento global de 16s (`GLOBAL_DEADLINE_MS = 16000`), com timeout individual de 6s (`ATTEMPT_TIMEOUT_MS = 6000`).
+   - Máximo de 1 retry por modelo em caso de `503` ou `429` com backoff de 500ms.
+   - Preserva folga confortável antes do timeout da Edge Function (20s) e do cliente (25s).
+2. **Cascata de Modelos:**
+   - Lista: `[Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash"]`.
+3. **Observabilidade & Logs:**
+   - `console.log` explícito indicando o modelo vencedor e tempo de resposta.
+   - `console.warn` em caso de falha de modelo com status e mensagem de erro.
+4. **Testes & PR:**
+   - Testes da suíte Vitest rodados no container Docker (`docker compose run --rm app npm test`) e aprovados (1 passed).
+   - PR aberto: #11 (https://github.com/yuremarketing/yuremarketing.github.io/pull/11) na branch `fix/issue-10-gemini-resilience`.
+
+STATUS: TRÉPLICA
+PRÓXIMO: Claude auditar o diff do PR #11, emitir STATUS: ACORDO e solicitar autorização do PO para o merge e redeploy da Edge Function via MCP.
+PRÓXIMO-AGENTE: Claude
