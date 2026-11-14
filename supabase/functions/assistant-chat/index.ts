@@ -3,7 +3,10 @@
 // never reaches the static GitHub Pages bundle.
 
 const ALLOWED_ORIGIN = Deno.env.get("ASSISTANT_ALLOWED_ORIGIN") ?? "https://yuremarketing.github.io";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
+const PRIMARY_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
+const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
+const CANDIDATE_MODELS = Array.from(new Set([PRIMARY_MODEL, ...FALLBACK_MODELS]));
+
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -29,6 +32,10 @@ function jsonError(message: string, status: number) {
     status,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 Deno.serve(async (req) => {
@@ -67,36 +74,75 @@ Deno.serve(async (req) => {
     parts: [{ text: m.content }],
   }));
 
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
+  const GLOBAL_DEADLINE_MS = 16000;
+  const ATTEMPT_TIMEOUT_MS = 6000;
+  const startTime = Date.now();
 
-  const GEMINI_TIMEOUT_MS = 20000;
-  const timeoutController = new AbortController();
-  const timeoutId = setTimeout(() => timeoutController.abort(), GEMINI_TIMEOUT_MS);
+  let activeResponse: Response | null = null;
+  let chosenModel = "";
 
-  let geminiResponse: Response;
-  try {
-    geminiResponse = await fetch(geminiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents,
-      }),
-      signal: timeoutController.signal,
-    });
-  } catch (err) {
-    console.error("Gemini API fetch falhou ou excedeu o timeout", err);
-    return jsonError("Tempo esgotado ao falar com o assistente. Tenta de novo em um instante.", 504);
-  } finally {
-    clearTimeout(timeoutId);
+  for (const model of CANDIDATE_MODELS) {
+    if (Date.now() - startTime >= GLOBAL_DEADLINE_MS) break;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (Date.now() - startTime >= GLOBAL_DEADLINE_MS) break;
+
+      const remainingTime = Math.max(1000, GLOBAL_DEADLINE_MS - (Date.now() - startTime));
+      const timeoutMs = Math.min(ATTEMPT_TIMEOUT_MS, remainingTime);
+
+      const controller = new AbortController();
+      const tId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+
+      try {
+        const res = await fetch(geminiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents,
+          }),
+          signal: controller.signal,
+        });
+
+        if (res.ok && res.body) {
+          activeResponse = res;
+          chosenModel = model;
+          console.log(`[Assistant] Sucesso com modelo '${model}' (tentativa ${attempt + 1}) em ${Date.now() - startTime}ms`);
+          break;
+        }
+
+        const errText = await res.text().catch(() => "");
+        console.warn(`[Assistant] Modelo '${model}' falhou com status ${res.status}: ${errText.slice(0, 150)}`);
+
+        // Se for erro transitório (503 alta demanda ou 429 rate limit) e primeira tentativa, espera backoff
+        if ((res.status === 503 || res.status === 429) && attempt === 0) {
+          await delay(500);
+          continue;
+        }
+        // Se for 404 (modelo inexistente) ou outro erro não transitório, não faz retry nesse modelo
+        break;
+      } catch (err) {
+        console.warn(`[Assistant] Erro ou timeout ao chamar '${model}' (tentativa ${attempt + 1}):`, err);
+        if (attempt === 0) {
+          await delay(400);
+          continue;
+        }
+      } finally {
+        clearTimeout(tId);
+      }
+    }
+
+    if (activeResponse) break;
   }
 
-  if (!geminiResponse.ok || !geminiResponse.body) {
-    const errText = await geminiResponse.text().catch(() => "");
-    console.error("Gemini API error", geminiResponse.status, errText);
+  if (!activeResponse || !activeResponse.body) {
+    const elapsed = Date.now() - startTime;
+    console.error(`[Assistant] Todos os modelos falharam após ${elapsed}ms`);
     return jsonError("Não consegui falar com o assistente agora. Tenta de novo em um instante.", 502);
   }
 
@@ -105,7 +151,7 @@ Deno.serve(async (req) => {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = geminiResponse.body!.getReader();
+      const reader = activeResponse!.body!.getReader();
       let buffer = "";
       try {
         while (true) {
