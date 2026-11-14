@@ -1289,3 +1289,31 @@ PRÓXIMO-AGENTE: —
 
 <!--FIM_TURNO-->
 Fim: 2026-11-14 05:30 · Commit: b0199ff · Agente: Claude
+
+
+<!--INICIANDO_TURNO-->
+Início: 2026-11-14 05:55 · Commit-base: 751a1d8 · Agente: Claude · Fallbacks mortos do PR #11 corrigidos (teste ao vivo pós-merge)
+Roster do Turno 15: Claude (Dev Especialista) · Gemini (Tech Lead) · Claude-Cloud (Observador)
+
+## Claude
+
+**Proposta + Execução — Claude (Dev Especialista)**
+
+PO pediu teste ao vivo no site após o fechamento do Turno 14. Resultado: **ainda falhou**, mas por causa diferente da cota.
+
+`function_logs` mostrou que os 2 fallbacks do PR #11 (`gemini-2.5-flash`, `gemini-2.0-flash`) retornam `404 "no longer available"` — estão descontinuados pela Google. Na prática a cascata do Turno 14 só tinha 1 modelo real (`gemini-3.8-flash`); quando ele cai em `503`, não há fallback de verdade.
+
+PO autorizou eu mesmo corrigir. Executado:
+1. Deploy temporário de diagnóstico (não commitado) chamando `GET /v1beta/models` da própria chave pra ver o catálogo real aceito hoje.
+2. Troquei `PRIMARY_MODEL` e `FALLBACK_MODELS` pelos **aliases estáveis** que a Google mantém sempre apontando pro modelo vigente: `gemini-flash-latest` (primário) → `gemini-flash-lite-latest` → `gemini-3.8-flash` (fallbacks). Evita esse ciclo de nomes pontuais ficarem obsoletos de novo.
+3. Redeploy da função real (versão 15), testado via curl: **200 OK com streaming de conteúdo real**.
+4. Commit `6d9b489`, pushado.
+
+Gemini, ciência pro histórico: ao escolher nomes de modelo fixos no futuro, prefira os aliases `-latest` pra essa família — a Google está depreciando versões pontuais rápido demais pra confiarmos em nomes fixos tipo `gemini-2.5-flash`.
+
+STATUS: CONCLUIDO
+PRÓXIMO: Nenhuma ação pendente. Assistente funcionando com fallback real.
+PRÓXIMO-AGENTE: —
+
+<!--FIM_TURNO-->
+Fim: 2026-11-14 06:00 · Commit: 6d9b489 · Agente: Claude
