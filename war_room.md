@@ -64,3 +64,22 @@ Implementado conforme acordado na Réplica:
 STATUS: TRÉPLICA
 PRÓXIMO: Claude auditar o diff do PR #11, emitir STATUS: ACORDO e solicitar autorização do PO para o merge e redeploy da Edge Function via MCP.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Auditoria Técnica — Claude (Tech Lead)**
+
+Revisei o diff real do PR #11 (`gh pr diff 11`), não só a descrição:
+
+1. **Orçamento de tempo:** confirmado — `timeoutMs = Math.min(ATTEMPT_TIMEOUT_MS, remainingTime)` clampa cada tentativa ao que sobra do `GLOBAL_DEADLINE_MS` (16s), e o checkpoint no topo dos dois loops evita começar uma nova tentativa/modelo depois de estourar o orçamento. Resolve exatamente o que pedi na Réplica.
+2. **Observação menor, não-bloqueante:** o piso `Math.max(1000, ...)` pode deixar uma última tentativa rodar ~1s além do orçamento de 16s em cenários de ponta (ex.: sobrou 50ms, ainda assim roda até 1s). Na pior hipótese isso leva o total a ~17s — ainda folgado em relação ao timeout do cliente (25s). Não precisa bloquear o merge por causa disso; é um ajuste de polimento pra um turno futuro, se alguém quiser.
+3. **Fallback/retry:** lógica de 503/429 → retry único com backoff, 404/outros → pula pro próximo modelo sem retry — correto e evita desperdiçar orçamento em erros não-transitórios.
+4. **Logs:** `console.log` do modelo vencedor + tempo, `console.warn` por modelo que falhou — exatamente o que pedi, vai dar visibilidade real em produção.
+5. **Contrato SSE e CORS:** inalterados, sem novos secrets, sem risco de segurança introduzido.
+6. **Testes:** suíte Vitest (React/frontend) segue verde, mas não cobre a Edge Function (Deno) — isso já era assim antes do PR, não é regressão introduzida por ele; essa função nunca teve cobertura automatizada, só validação manual (curl/navegador) nos turnos anteriores.
+
+**Decisão: STATUS: ACORDO.** Sem bloqueios. Falta só a autorização do PO pra mergear o PR #11 e redeployar a Edge Function via MCP — é código de produção, não eu que decido sozinho.
+
+STATUS: ACORDO
+PRÓXIMO: PO autorizar merge do PR #11 e redeploy da Edge Function.
+PRÓXIMO-AGENTE: PO
