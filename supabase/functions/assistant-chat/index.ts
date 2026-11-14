@@ -1,12 +1,11 @@
-// Supabase Edge Function (Deno): proxies chat messages to the Anthropic
-// Claude API and streams the response back as Server-Sent Events, so
-// ANTHROPIC_API_KEY never reaches the static GitHub Pages bundle.
+// Supabase Edge Function (Deno): proxies chat messages to the Google Gemini
+// API and streams the response back as Server-Sent Events, so GEMINI_API_KEY
+// never reaches the static GitHub Pages bundle.
 
 const ALLOWED_ORIGIN = Deno.env.get("ASSISTANT_ALLOWED_ORIGIN") ?? "https://yuremarketing.github.io";
-const CLAUDE_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 2000;
-const MAX_TOKENS = 1024;
 
 const SYSTEM_PROMPT = `Você é o assistente do portfólio online do Yure Mark, um engenheiro de software.
 Responda apenas perguntas sobre o Yure, sua trajetória, seus projetos e como entrar em contato com ele.
@@ -40,9 +39,9 @@ Deno.serve(async (req) => {
     return jsonError("Método não permitido.", 405);
   }
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
-    console.error("ANTHROPIC_API_KEY não configurada nos secrets da função.");
+    console.error("GEMINI_API_KEY não configurada nos secrets da função.");
     return jsonError("Assistente indisponível no momento.", 500);
   }
 
@@ -63,43 +62,41 @@ Deno.serve(async (req) => {
     }
   }
 
-  const claudeMessages = messages.map((m) => ({
-    role: m.role === "assistant" ? "assistant" : "user",
-    content: m.content,
+  const contents = messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
   }));
 
-  const CLAUDE_TIMEOUT_MS = 20000;
-  const timeoutController = new AbortController();
-  const timeoutId = setTimeout(() => timeoutController.abort(), CLAUDE_TIMEOUT_MS);
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
 
-  let claudeResponse: Response;
+  const GEMINI_TIMEOUT_MS = 20000;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), GEMINI_TIMEOUT_MS);
+
+  let geminiResponse: Response;
   try {
-    claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+    geminiResponse = await fetch(geminiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: MAX_TOKENS,
-        system: SYSTEM_PROMPT,
-        messages: claudeMessages,
-        stream: true,
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents,
       }),
       signal: timeoutController.signal,
     });
   } catch (err) {
-    console.error("Claude API fetch falhou ou excedeu o timeout", err);
+    console.error("Gemini API fetch falhou ou excedeu o timeout", err);
     return jsonError("Tempo esgotado ao falar com o assistente. Tenta de novo em um instante.", 504);
   } finally {
     clearTimeout(timeoutId);
   }
 
-  if (!claudeResponse.ok || !claudeResponse.body) {
-    const errText = await claudeResponse.text().catch(() => "");
-    console.error("Claude API error", claudeResponse.status, errText);
+  if (!geminiResponse.ok || !geminiResponse.body) {
+    const errText = await geminiResponse.text().catch(() => "");
+    console.error("Gemini API error", geminiResponse.status, errText);
     return jsonError("Não consegui falar com o assistente agora. Tenta de novo em um instante.", 502);
   }
 
@@ -108,7 +105,7 @@ Deno.serve(async (req) => {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = claudeResponse.body!.getReader();
+      const reader = geminiResponse.body!.getReader();
       let buffer = "";
       try {
         while (true) {
@@ -123,17 +120,15 @@ Deno.serve(async (req) => {
             const trimmed = line.trim();
             if (!trimmed.startsWith("data:")) continue;
             const jsonStr = trimmed.slice(5).trim();
-            if (!jsonStr) continue;
+            if (!jsonStr || jsonStr === "[DONE]") continue;
             try {
               const parsed = JSON.parse(jsonStr);
-              if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
-                const delta = parsed.delta.text;
-                if (delta) {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`));
-                }
+              const delta = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (delta) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`));
               }
             } catch (err) {
-              console.error("Falha ao interpretar chunk do Claude", err);
+              console.error("Falha ao interpretar chunk do Gemini", err);
             }
           }
         }
