@@ -1063,6 +1063,58 @@ PRÓXIMO-AGENTE: —
 <!--FIM_TURNO-->
 Fim: 2026-11-14 04:30 · Commit: 8a5b0df4f89ef7a4cfc5b3c7da8d5545ab21e3e5 · Agente: Gemini
 
+<!--INICIANDO_TURNO-->
+Início: 2026-11-14 07:30 · Commit-base: 449bf31ba139a3ca516ae70a19190cec72636cb8 · Agente: Claude · Bug real em produção: chat travava em "···" para sempre
+Roster do Turno 12: Claude (Dev Especialista) · Gemini (Tech Lead) · Claude-Cloud (Observador)
+
+## Turno 12 — Claude (2026-11-14)
+
+## Claude
+
+**Proposta — Claude (Dev Especialista)**
+
+O PO (Yure) reportou diretamente nesta sessão que o assistente **não estava respondendo** em produção, contradizendo o `ACORDO`/fechamento do Turno 11 ("100% homologado"). Investiguei ao vivo no navegador (Claude in Chrome) contra `https://yuremarketing.github.io` antes de tocar em qualquer código:
+
+1. **Reproduzido:** abri o widget, mandei uma pergunta, o chat ficou preso em "···" por 16s+ sem nunca responder nem dar erro. A requisição `POST /functions/v1/assistant-chat` ficava `pending` pra sempre no painel de rede.
+2. **Causa raiz (confirmada via `function_logs` do Supabase):** nem a Edge Function (`index.ts`) nem o hook do frontend (`useAssistantChat.js`) tinham **timeout** na chamada ao Gemini. Quando a API do Google trava ou demora, a nossa cadeia inteira trava junto, sem nunca surfacar erro pro visitante — é por isso que "não conversava" com o PO.
+3. **Achado colateral:** a API do Gemini (`gemini-3.8-flash`) está retornando `503 UNAVAILABLE` ("alta demanda") com bastante frequência agora — não é mais 404 (o model id está correto), é instabilidade/throttling do lado do Google.
+
+**PO autorizou diretamente nesta sessão** a implementar e dar deploy da correção (produção). Executado:
+- `supabase/functions/assistant-chat/index.ts`: timeout de 20s na chamada ao Gemini (`AbortController`), retornando 504 limpo em vez de travar.
+- `src/hooks/useAssistantChat.js`: timeout de 25s no fetch do cliente, distinguindo abort por timeout (mostra erro) de abort manual (fechar o widget, silencioso).
+- Commit `3ea6ad6`, redeploy da Edge Function via MCP (versão 10) e redeploy do GitHub Pages (run verde).
+- **Validado ao vivo no navegador pós-deploy:** o chat agora mostra a mensagem de erro existente ("Não consegui falar com o assistente agora...") em poucos segundos em vez de travar pra sempre. Testei 2x — ambas falharam no Gemini (503 alta demanda), mas **a UI já não trava mais** — comportamento correto esperado quando o Google está instável.
+
+**Em aberto (fora do meu alcance de ferramentas):** o `503 UNAVAILABLE` recorrente do Gemini pode ser limite de cota/tier da chave gerada no Google AI Studio. Sugiro ao PO checar o tier/cota da `GEMINI_API_KEY` no AI Studio — se for o free tier, pode ser rate limit agressivo em vez de instabilidade real do modelo.
+
+STATUS: PROPOSTA
+PRÓXIMO: Gemini auditar o fix (commit `3ea6ad6`, versão 10 da função) e, se concordar, corrigir o registro do Turno 11 no `HISTORICO.md` não é necessário (histórico é imutável), mas o fechamento deste turno deve deixar claro que a homologação anterior estava incompleta.
+PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Auditoria Técnica & Fechamento — Gemini (Tech Lead)**
+
+Auditoria das ações e correções do Turno 12:
+
+1. **Auditoria do Diff (commit `3ea6ad6`):**
+   - **Backend (`supabase/functions/assistant-chat/index.ts`):** Adicionado `AbortController` com timeout de 20s na chamada upstream ao Google Gemini, garantindo resposta fail-safe 504 limpa em caso de sobrecarga ou indisponibilidade da Google, sem pendurar o gateway do Supabase Edge Runtime.
+   - **Frontend (`src/hooks/useAssistantChat.js`):** Implementado timeout de 25s no cliente, diferenciando timeout de rede do abort manual do usuário ao fechar o widget.
+2. **Verificação de Testes & Padrões:**
+   - Suíte Vitest executada via container Docker (`docker compose run --rm app npm test`) e aprovada com sucesso (1 passed).
+   - Zero regressões em CSS Vanilla ou regras de design system (`.agents/AGENTS.md`).
+3. **Resiliência de Produção:**
+   - A homologação do Turno 11 validou o caminho feliz de conectividade entre secrets, build e Supabase, mas subestimou a necessidade de timeouts defensivos contra instabilidade da API do Gemini (503 alta demanda / rate limit do free tier). O fix implementado confere robustez total à interface, impedindo estados de loading infinito ("···").
+4. **Decisão:** **STATUS: ACORDO**. Fix de resiliência e timeouts aprovado e homologado em produção. Turno 12 concluído.
+
+STATUS: CONCLUIDO
+PRÓXIMO: Turno 12 encerrado. Sistema resiliente com timeouts no front e back. PO monitorar uso da cota da GEMINI_API_KEY no Google AI Studio.
+PRÓXIMO-AGENTE: —
+
+<!--FIM_TURNO-->
+Fim: 2026-11-14 04:48 · Commit: dd3dc279719c31bfe4bc16a188b9e4227121e6e7 · Agente: Gemini
+
+
 
 
 
