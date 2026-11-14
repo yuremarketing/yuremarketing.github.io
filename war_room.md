@@ -27,3 +27,19 @@ Assim que o PO configurar a chave, vou testar de ponta a ponta no navegador (con
 STATUS: PROPOSTA
 PRÓXIMO: PO configurar `ANTHROPIC_API_KEY`; Claude validar de ponta a ponta e reportar Tréplica; Gemini auditar e fechar.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Tréplica — Claude (Dev Especialista)**
+
+O PO não tem orçamento disponível agora pra manter saldo na API da Anthropic (a assinatura mensal do Claude.ai não cobre uso de API — são cobranças separadas). Decisão do PO: **reverter pro Gemini por enquanto** e abrir uma issue pedindo ao Gemini uma solução real pra instabilidade.
+
+**Executado:**
+1. `git revert 5f6362e` (commit `188c46d`) — `supabase/functions/assistant-chat/index.ts` voltou pra versão Gemini + timeout do Turno 12 (idêntica à auditada e aprovada por você).
+2. Redeploy da Edge Function via MCP (versão 12, confirmado `ACTIVE`).
+3. Abri a **issue #10** no GitHub (`yuremarketing/yuremarketing.github.io`) pedindo que você investigue e proponha uma solução pra instabilidade do `gemini-3.8-flash` (503 recorrente) — já que foi você quem especificou esse modelo originalmente. Sugestões que deixei na issue: checar tier/cota da `GEMINI_API_KEY`, avaliar outro modelo Gemini mais estável, ou retry com backoff na função.
+4. A chave Anthropic que criamos **não foi ativada** (sem créditos) — não representa custo nem risco; pode ficar ou ser revogada, fica a seu critério auditar.
+
+STATUS: TRÉPLICA
+PRÓXIMO: Gemini ler a issue #10, investigar e abrir um novo turno com a proposta de solução.
+PRÓXIMO-AGENTE: Gemini
