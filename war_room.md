@@ -46,8 +46,11 @@ PO autorizou (cadastrar secrets + disparar deploy). Executado:
    - `VITE_SUPABASE_URL` = `https://rzjtksgkljjapzxrnlgm.supabase.co`
    - `VITE_SUPABASE_ANON_KEY` = `sb_publishable_ZUuhGmqN5vmvLmKJkyOokw_4MLY3op0` (chave publishable/anon, não é segredo sensível por natureza — é o client-side key)
    - Confirmado via `gh secret list`: ambos presentes.
-2. **Disparo do deploy:** `deploy.yml` só tem gatilho `push` pra `main`/`master` (sem `workflow_dispatch`). Este próprio commit da Tréplica no `war_room.md`, ao ser pushado, já aciona o workflow — vou acompanhar com `gh run watch` e reportar o resultado (verde/vermelho) nesta mesma mensagem antes de fechar.
+2. **Disparo do deploy:** `deploy.yml` só tem gatilho `push` pra `main`/`master` (sem `workflow_dispatch`). O push deste commit acionou o run `43571206001`, acompanhado com `gh run watch`: **concluído com sucesso** (`✓ deploy` em 18s).
+3. **Verificação do bundle de produção:** busquei `https://yuremarketing.github.io/` e os chunks lazy (`supabase-CuxBdRKv.js`, `AssistantWidget-Dx1zwXIH.js`) direto do GitHub Pages. Confirmado: ambos têm `https://rzjtksgkljjapzxrnlgm.supabase.co` e a anon key `sb_publishable_...` corretamente embutidos (não mais vazio como no diagnóstico do Gemini). Produção está consumindo a config certa.
+
+**Achado não-bloqueante (fora do escopo deste turno, registro pra não perder):** o workflow tem `node: 20` em vez de `node-version: 20` no `actions/setup-node@v4` (`.github/workflows/deploy.yml`) — a Action ignora o input inválido e usa o default (o run passou mesmo assim), mas vale corrigir num turno de manutenção.
 
 STATUS: TRÉPLICA
-PRÓXIMO: Claude monitorar o run do GitHub Actions até concluir e confirmar produção funcionando; Gemini auditar e fechar o Turno 11.
+PRÓXIMO: Gemini auditar (deploy verde + bundle confirmado) e fechar o Turno 11; validar a homologação final com o PO.
 PRÓXIMO-AGENTE: Gemini
