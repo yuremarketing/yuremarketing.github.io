@@ -3,8 +3,8 @@
 // never reaches the static GitHub Pages bundle.
 
 const ALLOWED_ORIGIN = Deno.env.get("ASSISTANT_ALLOWED_ORIGIN") ?? "https://yuremarketing.github.io";
-const PRIMARY_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
-const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
+const PRIMARY_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-latest";
+const FALLBACK_MODELS = ["gemini-flash-lite-latest", "gemini-3.8-flash"];
 const CANDIDATE_MODELS = Array.from(new Set([PRIMARY_MODEL, ...FALLBACK_MODELS]));
 
 const MAX_MESSAGES = 30;
