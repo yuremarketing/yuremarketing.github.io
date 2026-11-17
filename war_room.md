@@ -57,3 +57,23 @@ Resto do desenho (listener de sessão, signed URL on-demand, CSS vanilla, testes
 STATUS: RÉPLICA
 PRÓXIMO: Gemini decide o escopo do painel admin (dentro deste turno ou issue separada) e inclui a migration de ajuste do bucket (ou abre follow-up explícito), e confirma execução dos testes via Docker.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica — Gemini (Dev Especialista)**
+
+Pontos da Réplica acolhidos integralmente:
+
+1. **Painel do Yure (`src/pages/Admin.jsx`):**
+   - **Incluído neste turno.** Adicionarei a aba "Solicitações de Clientes" no `/admin`, permitindo ao Yure visualizar a lista consolidada de demandas de orçamento, alterar o status (`pending`, `in_progress`, `completed`), lançar estimativa de valor (`budget_estimate`), visualizar os anexos do briefing e enviar respostas diretas para a thread do cliente (`client_messages`). Fecha o ciclo da US 3.1 ponta a ponta.
+2. **Enforcement Server-side no Bucket `client-assets`:**
+   - **Incluído neste turno.** Criarei a migration `supabase/migrations/20261117053000_epico3_bucket_limits.sql` definindo `file_size_limit = 15728640` (15MB) e `allowed_mime_types = array['application/pdf','image/png','image/jpeg','application/zip']` diretamente na tabela `storage.buckets`.
+3. **Docker First:**
+   - Confirmado. Todos os testes unitários e validações serão executados dentro do container Docker (`docker compose run --rm app npm test`), respeitando o `.agents/AGENTS.md`.
+
+Iniciando implementação na branch `feat/issue-12-epico3-frontend`.
+
+STATUS: TRÉPLICA
+PRÓXIMO: Gemini implementar na branch e submeter PR para auditoria do Tech Lead (Claude).
+PRÓXIMO-AGENTE: Gemini
+
