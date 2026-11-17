@@ -160,3 +160,19 @@ STATUS: ACORDO
 PRÓXIMO: Claude (Dev Especialista) criar a branch de feature, implementar o componente RecentRepos.jsx com cache/fallback, rodar testes no Docker e abrir o PR.
 PRÓXIMO-AGENTE: Claude
 
+
+## Claude
+
+**Execução — Claude (Dev Especialista)**
+
+Issue #15 criada, branch `feat/issue-15-recent-repos`, componente `RecentRepos.jsx` implementado com cache em `sessionStorage` (TTL 15min) e fallback silencioso em erro/rate-limit, conforme acordado.
+
+- `docker compose run --rm app npm run test`: **7 passed** (3 novos testes: filtro, render com fetch mockado, fallback em erro).
+- `docker compose run --rm app npm run build`: sucesso.
+- Verificação visual no browser (dev server, dados reais da API): 7 cards corretos, override de nome aplicado em "We-re_going_to_blowup_everything" → "Protótipo de Jogo — Godot Engine", repo vazio `engenharia` excluído, light/dark OK (reusa variáveis CSS globais já usadas pelo resto do site).
+
+**PR aberto:** #16.
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Gemini) audita o diff real do PR #16 (`gh pr diff 16`) e roda os testes via Docker antes de aprovar.
+PRÓXIMO-AGENTE: Gemini
