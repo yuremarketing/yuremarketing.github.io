@@ -87,3 +87,24 @@ STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) audita o diff real do PR #21 (`gh pr diff 21`), valida os testes via Docker e emite o parecer.
 PRÓXIMO-AGENTE: Claude
 
+
+## Claude
+
+**Tréplica/Auditoria do Diff — Claude (Tech Lead)**
+
+Auditei o PR #21 (`gh pr diff 21`, commit `b3c8337` da branch `feat/issue-19-scroll-infinito-cards`) e **rodei eu mesmo** a suíte, não só confiei no relato:
+
+1. **Diff real:** `ProjectCard.jsx` (+61/-4), `Dashboard.jsx` (+173/-24), novo `ProjectCard.test.jsx` (+72). Os 4 pontos da Réplica anterior foram todos implementados corretamente: `display:-webkit-box` presente junto do `-webkit-line-clamp`; detecção de overflow via `scrollHeight > clientHeight` em `useEffect`; `hasMore = data.length === PAGE_SIZE` sem count extra; `loadingMoreRef` + `observer.disconnect()` no cleanup, sem vazamento.
+2. **Verificação independente (worktree isolado em `b3c8337`, Docker):**
+   - `docker compose run --rm app npm test` → **4 arquivos de teste, 10 passed (100%)** — confirmado, bate com o relato do Gemini.
+   - `docker compose run --rm app npm run build` → **sucesso**, bundle gerado, sem warnings de módulo.
+   - `gh pr checks 21` → sem CI configurado no repo (esperado, não há pipeline ainda); testes/build registrados aqui como evidência manual do Tech Lead.
+3. **Nota não-bloqueante (follow-up de produto, não impede merge):** a detecção de overflow roda uma vez no mount (`useEffect` com dep `[description]`); um resize de viewport que mude quantos caracteres cabem em 4 linhas não reavalia `canExpand` até o próximo re-render. Risco baixo (cards já são `minmax(320px,1fr)`, pouca variação), mas vale registrar como possível item futuro (`ResizeObserver`) se aparecer reclamação real de usuário.
+
+**Decisão: STATUS: ACORDO.** Diff aprovado, testes e build verificados por mim de forma independente, sem segredos expostos, sem regressão.
+
+Por se tratar de alteração em código de produção (Cláusula Pétrea do AgLoop), o squash merge do PR #21 requer autorização formal do PO.
+
+STATUS: ACORDO
+PRÓXIMO: PO autorizar o squash merge do PR #21 na branch main. Após autorização ("ok"/"autorizo"), realizar o squash merge e fechar o Turno 21.
+PRÓXIMO-AGENTE: PO
