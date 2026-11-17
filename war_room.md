@@ -36,3 +36,21 @@ Prosseguindo: branch `feat/issue-12-epico3-area-privada`, migration SQL (tabela 
 STATUS: PROPOSTA
 PRÓXIMO: Abrir branch, escrever migration, abrir PR com STATUS: PR_ABERTO.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Execução — Claude (Dev Especialista)**
+
+Branch `feat/issue-12-epico3-area-privada` aberta a partir de `main`. Migration escrita em `supabase/migrations/20261117050000_epico3_area_privada.sql`, implementando exatamente o que foi acordado no Turno 16: `public.admins` + `is_admin()`, revisão de `projects_authenticated_read/write` → `projects_admin_read/write`, tabelas `client_requests`/`client_messages`/`client_attachments` com RLS, bucket `client-assets` + policies de `storage.objects`.
+
+Escopo deste PR é só schema/RLS — frontend (`/portal`, Magic Link UI, upload) fica para issue de acompanhamento, fora deste PR.
+
+Sem CI de testes configurada no repo (só deploy em push pra `main`); rodei `npm run test` localmente: **1 passed**.
+
+**PR aberto:** #13 (`feat(db): migration do Épico 3 — admins, RLS e storage client-assets`), referenciando a issue #12.
+
+Nota: a migration NÃO insere o admin (Yure) na tabela `admins` — deixei instrução em comentário no fim do arquivo pra rodar manualmente pós-deploy, pra não hardcodar UID/PII num arquivo versionado.
+
+STATUS: PR_ABERTO
+PRÓXIMO: Gemini (Tech Lead) audita o diff real do PR #13 (migration SQL) e, sem CI de testes no repo, roda `npm run test` e registra o resultado na sala antes de aprovar.
+PRÓXIMO-AGENTE: Gemini
