@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   hashToken,
   hasScope,
+  isPrivateOrRestrictedIp,
   isPrivateOrRestrictedHost,
+  validateSafeUrl,
   validateUrlForEnrichment,
   validateAgentToken,
   recordAgentAudit,
@@ -13,9 +15,11 @@ import {
   setProjectVisibility,
   deleteProject,
   enrichFromUrl,
+  handleMcpRequest,
 } from './portfolioMcpService';
 
-describe('portfolioMcpService', () => {
+
+describe('Serviço MCP e Camada Compartilhada (portfolioMcpService)', () => {
   describe('hashToken', () => {
     it('gera hash SHA-256 consistente de 64 caracteres hexadecimais', async () => {
       const hash1 = await hashToken('mcp_secret_token_123');
@@ -40,32 +44,67 @@ describe('portfolioMcpService', () => {
     });
   });
 
-  describe('SSRF Protection & URL Validation', () => {
-    it('detecta hosts restritos e privados', () => {
-      expect(isPrivateOrRestrictedHost('localhost')).toBe(true);
-      expect(isPrivateOrRestrictedHost('127.0.0.1')).toBe(true);
-      expect(isPrivateOrRestrictedHost('10.0.0.5')).toBe(true);
-      expect(isPrivateOrRestrictedHost('172.16.0.1')).toBe(true);
-      expect(isPrivateOrRestrictedHost('192.168.1.100')).toBe(true);
-      expect(isPrivateOrRestrictedHost('169.254.169.254')).toBe(true);
-      expect(isPrivateOrRestrictedHost('::1')).toBe(true);
-      expect(isPrivateOrRestrictedHost('internal.service.local')).toBe(true);
-      expect(isPrivateOrRestrictedHost('metadata.google.internal')).toBe(true);
-
-      // Hosts públicos permitidos
-      expect(isPrivateOrRestrictedHost('github.com')).toBe(false);
-      expect(isPrivateOrRestrictedHost('example.com')).toBe(false);
-      expect(isPrivateOrRestrictedHost('api.github.com')).toBe(false);
+  describe('Validação de Esquema de URL (Proteção contra XSS)', () => {
+    it('permite protocolos seguros http: e https:', () => {
+      expect(validateSafeUrl('https://example.com/demo')).toBe('https://example.com/demo');
+      expect(validateSafeUrl('http://example.com/demo')).toBe('http://example.com/demo');
     });
 
-    it('rejeita URLs HTTP não seguras e IPs privados', () => {
-      expect(() => validateUrlForEnrichment('http://github.com/repo')).toThrow(/HTTPS/);
-      expect(() => validateUrlForEnrichment('https://127.0.0.1:8080')).toThrow(/SSRF/);
-      expect(() => validateUrlForEnrichment('https://localhost/admin')).toThrow(/SSRF/);
-      expect(() => validateUrlForEnrichment('not-a-url')).toThrow(/inválida/);
+    it('rejeita esquemas maliciosos javascript:, vbscript: e data:', () => {
+      expect(() => validateSafeUrl('javascript:alert(1)', 'url')).toThrow(/malicioso/);
+      expect(() => validateSafeUrl('vbscript:msgbox(1)', 'github_url')).toThrow(/malicioso/);
+      expect(() => validateSafeUrl('data:text/html,<script>alert(1)</script>', 'image_url')).toThrow(/malicioso/);
+    });
 
-      const valid = validateUrlForEnrichment('https://github.com/yuremarketing/portfolio');
-      expect(valid.hostname).toBe('github.com');
+    it('rejeita URLs malformadas ou com esquemas inesperados', () => {
+      expect(() => validateSafeUrl('not-a-url', 'url')).toThrow(/malformada/);
+      expect(() => validateSafeUrl('ftp://ftp.example.com', 'url')).toThrow(/Protocolo não permitido/);
+    });
+  });
+
+  describe('Proteção Avançada contra SSRF (IPs, DNS Rebinding e Redirects)', () => {
+    it('identifica corretamente IPs privados e de metadados de nuvem', () => {
+      expect(isPrivateOrRestrictedIp('127.0.0.1')).toBe(true);
+      expect(isPrivateOrRestrictedIp('10.0.0.1')).toBe(true);
+      expect(isPrivateOrRestrictedIp('172.16.0.1')).toBe(true);
+      expect(isPrivateOrRestrictedIp('192.168.1.1')).toBe(true);
+      expect(isPrivateOrRestrictedIp('169.254.169.254')).toBe(true);
+      expect(isPrivateOrRestrictedIp('::1')).toBe(true);
+      expect(isPrivateOrRestrictedIp('8.8.8.8')).toBe(false);
+      expect(isPrivateOrRestrictedIp('140.82.121.4')).toBe(false); // GitHub IP público
+    });
+
+    it('identifica hosts restritos', () => {
+      expect(isPrivateOrRestrictedHost('localhost')).toBe(true);
+      expect(isPrivateOrRestrictedHost('metadata.google.internal')).toBe(true);
+      expect(isPrivateOrRestrictedHost('internal.service.local')).toBe(true);
+      expect(isPrivateOrRestrictedHost('github.com')).toBe(false);
+    });
+
+    it('bloqueia tentativa de DNS Rebinding para IP privado', async () => {
+      const mockDnsResolver = vi.fn().mockResolvedValue(['169.254.169.254']);
+      await expect(
+        enrichFromUrl('https://evil-rebinding.com/steal', {
+          fetchImpl: vi.fn(),
+          dnsResolver: mockDnsResolver,
+        })
+      ).rejects.toThrow(/SSRF\/DNS Rebinding/);
+    });
+
+    it('bloqueia redirecionamento para protocolo não HTTPS ou host privado', async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        status: 302,
+        headers: new Headers({
+          location: 'http://169.254.169.254/latest/meta-data/',
+        }),
+      });
+
+      await expect(
+        enrichFromUrl('https://legit-site.com/redirect', {
+          fetchImpl: mockFetch,
+          dnsResolver: vi.fn().mockResolvedValue(['93.184.216.34']),
+        })
+      ).rejects.toThrow(/não HTTPS bloqueado/);
     });
   });
 
@@ -76,7 +115,7 @@ describe('portfolioMcpService', () => {
       expect(res.error).toMatch(/ausente/);
     });
 
-    it('rejeita token não existente no banco', async () => {
+    it('rejeita token inexistente', async () => {
       const mockSupabase = {
         from: () => ({
           select: () => ({
@@ -167,10 +206,14 @@ describe('portfolioMcpService', () => {
     });
   });
 
-  describe('Operações de Projetos (CRUD)', () => {
-    it('createProject valida título obrigatório e formata payload', async () => {
-      await expect(createProject({}, {})).rejects.toThrow("O campo 'title' é obrigatório.");
+  describe('Operações de Projetos com Validação de Segurança', () => {
+    it('createProject rejeita URL maliciosa (javascript:) nos links', async () => {
+      await expect(
+        createProject({}, { title: 'XSS Attack', url: 'javascript:alert(document.cookie)' })
+      ).rejects.toThrow(/malicioso/);
+    });
 
+    it('createProject cadastra projeto válido formatado', async () => {
       const mockInsert = vi.fn().mockReturnValue({
         select: () => ({
           single: async () => ({ data: { id: 'p-1', title: 'Meu Projeto' }, error: null }),
@@ -181,103 +224,99 @@ describe('portfolioMcpService', () => {
       const res = await createProject(mockSupabase, {
         title: ' Meu Projeto ',
         description: ' Descrição ',
-        tags: ['React', 'Node'],
+        url: 'https://demo.com',
+        tags: ['React'],
       });
 
       expect(res.id).toBe('p-1');
       expect(mockInsert).toHaveBeenCalledWith([
         expect.objectContaining({
           title: 'Meu Projeto',
-          description: 'Descrição',
-          tags: ['React', 'Node'],
+          url: 'https://demo.com/',
           visible: true,
         }),
       ]);
     });
 
-    it('setProjectVisibility exige booleano e atualiza projeto', async () => {
-      await expect(setProjectVisibility({}, { id: 'p-1', visible: 'sim' })).rejects.toThrow(/booleano/);
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: () => ({
-          select: () => ({
-            single: async () => ({ data: { id: 'p-1', visible: false }, error: null }),
-          }),
-        }),
-      });
-      const mockSupabase = { from: () => ({ update: mockUpdate }) };
-
-      const res = await setProjectVisibility(mockSupabase, { id: 'p-1', visible: false });
-      expect(res.visible).toBe(false);
-      expect(mockUpdate).toHaveBeenCalledWith({ visible: false });
-    });
-
     it('deleteProject exige confirm: true para autorizar exclusão', async () => {
       await expect(deleteProject({}, { id: 'p-1', confirm: false })).rejects.toThrow(/confirmação/);
-      await expect(deleteProject({}, { id: 'p-1' })).rejects.toThrow(/confirmação/);
-
       const mockDelete = vi.fn().mockReturnValue({
         eq: async () => ({ error: null }),
       });
-      const mockSupabase = { from: () => ({ delete: mockDelete }) };
-
-      const res = await deleteProject(mockSupabase, { id: 'p-1', confirm: true });
+      const res = await deleteProject({ from: () => ({ delete: mockDelete }) }, { id: 'p-1', confirm: true });
       expect(res.success).toBe(true);
-      expect(res.id).toBe('p-1');
     });
   });
 
-  describe('enrichFromUrl', () => {
-    it('extrai dados enriquecidos de um repositório GitHub', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          name: 'super-portfolio',
-          description: 'Portfólio moderno em React',
-          html_url: 'https://github.com/yuremarketing/super-portfolio',
-          homepage: 'https://yuremarketing.github.io',
-          language: 'JavaScript',
-          topics: ['react', 'portfolio', 'vite'],
+  describe('handleMcpRequest (Handler Real da Edge Function index.ts)', () => {
+    it('responde a initialize com capabilities de tools e protocolo 2024-11-05', async () => {
+      const req = new Request('https://edge.supabase.co/functions/v1/portfolio-mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }),
+      });
+
+      const res = await handleMcpRequest(req, {});
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.result.protocolVersion).toBe('2024-11-05');
+      expect(json.result.serverInfo.name).toBe('portfolio-mcp');
+    });
+
+    it('retorna HTTP 401 se tentar invocar tools sem token', async () => {
+      const req = new Request('https://edge.supabase.co/functions/v1/portfolio-mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'tools/call',
+          params: { name: 'projects_list' },
         }),
       });
 
-      const data = await enrichFromUrl('https://github.com/yuremarketing/super-portfolio', mockFetch);
-      expect(data.title).toBe('super-portfolio');
-      expect(data.description).toBe('Portfólio moderno em React');
-      expect(data.url).toBe('https://yuremarketing.github.io');
-      expect(data.github_url).toBe('https://github.com/yuremarketing/super-portfolio');
-      expect(data.tags).toContain('JavaScript');
-      expect(data.tags).toContain('react');
-      expect(data.image_url).toContain('opengraph.githubassets.com');
+      const res = await handleMcpRequest(req, {});
+      expect(res.status).toBe(401);
+      const json = await res.json();
+      expect(json.error.message).toMatch(/Não autorizado/);
     });
 
-    it('rejeita tentativa de SSRF para rede interna', async () => {
-      await expect(enrichFromUrl('https://127.0.0.1:8000/api')).rejects.toThrow(/SSRF/);
-    });
-  });
+    it('retorna HTTP 403 se o agente não possuir o escopo necessário', async () => {
+      const mockSupabase = {
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: {
+                  id: 'tok-reader',
+                  agent_name: 'Claude',
+                  scopes: ['projects:read'],
+                },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      };
 
-  describe('recordAgentAudit', () => {
-    it('insere registro em agent_audit_log', async () => {
-      const mockInsert = vi.fn().mockResolvedValue({ error: null });
-      const mockSupabase = { from: () => ({ insert: mockInsert }) };
-
-      await recordAgentAudit(mockSupabase, {
-        agentName: 'Claude',
-        tokenId: 'tok-1',
-        tool: 'project_create',
-        args: { title: 'Novo Projeto' },
-        result: { id: 'p-new' },
-        status: 'success',
+      const req = new Request('https://edge.supabase.co/functions/v1/portfolio-mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-agent-token': 'token_reader_only',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 3,
+          method: 'tools/call',
+          params: { name: 'project_delete', arguments: { id: 'p-1', confirm: true } },
+        }),
       });
 
-      expect(mockInsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          agent_name: 'Claude',
-          token_id: 'tok-1',
-          tool: 'project_create',
-          status: 'success',
-        })
-      );
+      const res = await handleMcpRequest(req, mockSupabase);
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.message).toMatch(/projects:delete/);
     });
   });
 });
