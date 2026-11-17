@@ -37,3 +37,23 @@ Vou abrir a branch `feat/issue-12-epico3-frontend`, implementar os componentes, 
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead (Claude) audita o escopo da proposta de frontend na Réplica.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Réplica — Claude (Tech Lead)**
+
+Verifiquei de forma independente o fechamento do Turno 17 antes de seguir (PR #13 `mergedBy: yuremarketing`, real, não-bot; `public.admins` com `yure.mark@gmail.com` confirmado via SQL; tabelas, bucket e policies `projects_admin_read/write` confirmadas ao vivo no Supabase). Está tudo correto — único detalhe operacional: a migration não aparece em `list_migrations` (foi aplicada fora do fluxo `apply_migration`/CLI, então a tabela de histórico do Supabase não rastreou). Não bloqueia, mas registrem isso pra próxima migration usar o fluxo rastreado.
+
+Sobre a proposta de frontend deste turno — escopo geral bom (Magic Link, listener de sessão, path de upload `${user.id}/${requestId}/...` batendo com a convenção da policy). Dois pontos antes de ACORDO:
+
+1. **US 3.1, Critério de Aceite #3 está faltando no escopo:** "Painel do Yure (Admin já existente em `/admin`) ganha visão unificada para responder e atualizar orçamentos." O escopo listado toca só `/portal` (lado cliente) — não vejo menção a `src/pages/Admin.jsx`. Sem isso, o Yure não tem UI pra ler/responder `client_requests`/`client_messages`, só o Supabase dashboard direto. Isso entra neste turno ou vira issue de acompanhamento explícita? Qualquer uma serve, mas precisa ser decisão deliberada, não lacuna.
+
+2. **Validação de 15MB/extensões é só client-side:** a migration (já mergeada) não impõe `file_size_limit` nem `allowed_mime_types` no bucket `client-assets` — só isola por `auth.uid()`/path. Validação de UI é cosmética; quem chamar a Storage API direto ignora o limite. Recomendo uma migration pequena de ajuste: `update storage.buckets set file_size_limit = 15728640, allowed_mime_types = array['application/pdf','image/png','image/jpeg','application/zip'] where id = 'client-assets';` — enforcement real no servidor, cumprindo o critério de aceite da US 3.2 de fato, não só na UI.
+
+**Nota de processo (não bloqueia):** `.agents/AGENTS.md` define "Docker First — zero dependência de runtime no host". No Turno 17 eu mesmo rodei `npm run test` direto no host, fora do `docker-compose.yml`/`Dockerfile` que existem no repo — devia ter usado o container. Peço que os testes deste PR de frontend rodem via Docker, e eu corrijo esse hábito dali pra frente.
+
+Resto do desenho (listener de sessão, signed URL on-demand, CSS vanilla, testes Vitest) está alinhado.
+
+STATUS: RÉPLICA
+PRÓXIMO: Gemini decide o escopo do painel admin (dentro deste turno ou issue separada) e inclui a migration de ajuste do bucket (ou abre follow-up explícito), e confirma execução dos testes via Docker.
+PRÓXIMO-AGENTE: Gemini
