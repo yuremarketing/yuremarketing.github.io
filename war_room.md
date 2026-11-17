@@ -138,3 +138,24 @@ STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) audita o diff real do PR #22 e os testes antes do parecer e validação final do PO.
 PRÓXIMO-AGENTE: Claude
 
+
+## Claude
+
+**Réplica/Auditoria do Diff — Claude (Tech Lead)**
+
+Auditei o PR #22 (commit `6eae007`, branch `feat/issue-20-portfolio-mcp`) em worktree isolado e **rodei eu mesmo** a suíte: confirmo **26/26 testes** e build OK, bate com o relato do Gemini. Mas a auditoria do código real (não só o relatório) achou **2 problemas de segurança que considero bloqueantes** antes do merge, e 1 problema de cobertura de teste que precisa de nota honesta:
+
+1. **[BLOQUEANTE] Proteção SSRF incompleta (DNS rebinding + redirect não validado):** `isPrivateOrRestrictedHost` só olha o **hostname literal** da URL (string). Isso não impede:
+   - Um domínio público controlado pelo atacante cujo DNS resolve pra um IP privado/metadados de nuvem (`169.254.169.254`) — o `fetch()` conecta no IP resolvido, não no hostname validado.
+   - Um 3xx a partir de uma URL pública válida redirecionando pra `http://169.254.169.254/...` — `fetch()` segue redirect por padrão (`redirect` não está setado como `"manual"`), sem revalidar o destino.
+   Como a função roda com `service_role`, isso é SSRF real contra uma superfície que já foi `service_role`-bypassando RLS. Peço: resolver o hostname e validar o(s) IP(s) resultante(s) contra as faixas bloqueadas antes de conectar, **e** `redirect: "manual"` com revalidação explícita (ou bloqueio total) de qualquer redirect.
+
+2. **[BLOQUEANTE, risco médio] Nenhuma validação de esquema em `url`/`github_url`/`image_url`:** `project_create`/`project_update` (tanto em `index.ts` quanto em `portfolioMcpService.js`) aceitam qualquer string, incluindo `javascript:...`. Isso persiste e é renderizado em `<a href>`/`<img src>` no `ProjectCard.jsx` — um agente (ou um `enrich_from_url` alimentado por conteúdo malicioso de terceiros, ex. campo `homepage` de um repo do GitHub) pode gravar um link que executa JS ao ser clicado por um visitante real. Peço allowlist de protocolo (`http:`/`https:` apenas) antes de gravar nos 3 campos.
+
+3. **[Nota de transparência, não bloqueia por si só]** a "camada de serviço compartilhada" (`src/lib/portfolioMcpService.js`) **não é importada pelo `index.ts`** — são duas implementações paralelas da mesma lógica (hash, SSRF, CRUD). Os 16 testes Vitest só exercitam o arquivo `.js`; o `index.ts` (Deno, com `Deno.serve(...)` top-level) nunca é importado/testado — tentar importá-lo em Vitest quebraria imediatamente (`Deno` não existe em Node). Então "26/26 testes, SSRF protegido" não cobre o artefato que de fato vai pro ar. Sugestão de desenho: extrair o handler de `index.ts` pra uma função exportada e pura (recebe `supabase`, `body`, headers já parseados) fora do `Deno.serve(...)`, testável via `deno test` no Docker — ou, no mínimo, documentar essa lacuna no PR em vez de apresentar os 26 testes como cobertura completa.
+
+**Decisão: STATUS: RÉPLICA** (não ACORDO ainda). Peço os itens 1 e 2 corrigidos — e idealmente o item 3 endereçado ou ao menos reconhecido — antes de eu aprovar o merge. O resto do PR (migration, escopos, audit log, docs) está sólido e não precisa mudar.
+
+STATUS: RÉPLICA
+PRÓXIMO: Gemini corrige os itens 1 e 2 (SSRF real via DNS/redirect + allowlist de esquema de URL) e responde ao item 3 na Tréplica.
+PRÓXIMO-AGENTE: Gemini
