@@ -20,6 +20,15 @@ export function Admin() {
   const [projects, setProjects] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
+  // Épico 3 - Demandas de Clientes & Orçamentos
+  const [activeTab, setActiveTab] = useState('projects');
+  const [clientRequests, setClientRequests] = useState([]);
+  const [selectedReq, setSelectedReq] = useState(null);
+  const [reqMessages, setReqMessages] = useState([]);
+  const [reqAttachments, setReqAttachments] = useState([]);
+  const [replyText, setReplyText] = useState('');
+  const [newBudget, setNewBudget] = useState('');
+
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -45,9 +54,120 @@ export function Admin() {
     }
   };
 
+  const fetchClientRequests = async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('client_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setClientRequests(data);
+      if (!selectedReq && data.length > 0) {
+        setSelectedReq(data[0]);
+        setNewBudget(data[0].budget_estimate ?? '');
+      }
+    }
+  };
+
   useEffect(() => {
-    if (user) fetchProjects();
+    if (user) {
+      fetchProjects();
+      fetchClientRequests();
+    }
   }, [user]);
+
+  useEffect(() => {
+    if (!selectedReq || !supabase) return;
+    setNewBudget(selectedReq.budget_estimate ?? '');
+
+    const fetchDetails = async () => {
+      const { data: msgs } = await supabase
+        .from('client_messages')
+        .select('*')
+        .eq('request_id', selectedReq.id)
+        .order('created_at', { ascending: true });
+      if (msgs) setReqMessages(msgs);
+
+      const { data: atts } = await supabase
+        .from('client_attachments')
+        .select('*')
+        .eq('request_id', selectedReq.id)
+        .order('created_at', { ascending: false });
+      if (atts) setReqAttachments(atts);
+    };
+
+    fetchDetails();
+  }, [selectedReq]);
+
+  const handleUpdateStatus = async (status) => {
+    if (!selectedReq || !supabase) return;
+    const { error } = await supabase
+      .from('client_requests')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', selectedReq.id);
+
+    if (!error) {
+      setSelectedReq((prev) => ({ ...prev, status }));
+      fetchClientRequests();
+      setSuccessMsg('Status da demanda atualizado!');
+    }
+  };
+
+  const handleUpdateBudget = async (e) => {
+    e.preventDefault();
+    if (!selectedReq || !supabase) return;
+    const val = newBudget ? parseFloat(newBudget) : null;
+    const { error } = await supabase
+      .from('client_requests')
+      .update({ budget_estimate: val, updated_at: new Date().toISOString() })
+      .eq('id', selectedReq.id);
+
+    if (!error) {
+      setSelectedReq((prev) => ({ ...prev, budget_estimate: val }));
+      fetchClientRequests();
+      setSuccessMsg('Estimativa de orçamento salva com sucesso!');
+    }
+  };
+
+  const handleSendAdminReply = async (e) => {
+    e.preventDefault();
+    if (!replyText.trim() || !selectedReq || !supabase) return;
+
+    const { data, error } = await supabase
+      .from('client_messages')
+      .insert({
+        request_id: selectedReq.id,
+        sender_id: user.id,
+        message: replyText.trim(),
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setReqMessages((prev) => [...prev, data]);
+      setReplyText('');
+    }
+  };
+
+  const handleDownloadAdminAttachment = async (path, filename) => {
+    const { data, error } = await supabase.storage
+      .from('client-assets')
+      .createSignedUrl(path, 120);
+
+    if (error || !data?.signedUrl) {
+      alert('Erro ao gerar download do anexo.');
+      return;
+    }
+
+    const a = document.createElement('a');
+    a.href = data.signedUrl;
+    a.download = filename;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -213,7 +333,30 @@ export function Admin() {
           {successMsg && <div className="alert-box alert-success">{successMsg}</div>}
           {errorMsg && <div className="alert-box alert-error">{errorMsg}</div>}
 
-          <h2 className="form-title">{editingId ? 'Editar Projeto' : 'Adicionar Novo Projeto'}</h2>
+          {/* Abas de Navegação Admin */}
+          <div className="admin-tabs">
+            <button
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'projects' ? 'active' : ''}`}
+              onClick={() => setActiveTab('projects')}
+            >
+              Projetos do Portfólio ({projects.length})
+            </button>
+            <button
+              type="button"
+              className={`admin-tab-btn ${activeTab === 'clients' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('clients');
+                fetchClientRequests();
+              }}
+            >
+              Demandas de Clientes ({clientRequests.length})
+            </button>
+          </div>
+
+          {activeTab === 'projects' ? (
+            <>
+              <h2 className="form-title">{editingId ? 'Editar Projeto' : 'Adicionar Novo Projeto'}</h2>
           <form onSubmit={handleAddProject} className="project-form">
             <div className="form-group">
               <label>Título do Projeto *</label>
@@ -319,8 +462,139 @@ export function Admin() {
               ))}
             </ul>
           )}
-        </section>
+        </>
+      ) : (
+        /* Aba de Demandas de Clientes (Épico 3) */
+        <div className="client-admin-layout">
+          <div className="client-requests-col">
+            <h2 className="form-title">Solicitações Recebidas ({clientRequests.length})</h2>
+            {clientRequests.length === 0 ? (
+              <p className="empty-list">Nenhuma demanda de cliente recebida ainda.</p>
+            ) : (
+              <div className="client-req-list">
+                {clientRequests.map((req) => (
+                  <div
+                    key={req.id}
+                    onClick={() => setSelectedReq(req)}
+                    className={`client-req-card ${selectedReq?.id === req.id ? 'active' : ''}`}
+                  >
+                    <div className="client-req-header">
+                      <span className={`status-pill status-${req.status}`}>
+                        {req.status === 'pending' ? 'Pendente' : req.status === 'in_progress' ? 'Em Análise' : 'Concluído'}
+                      </span>
+                      <span className="client-req-date">
+                        {new Date(req.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <div className="client-req-meta">
+                      <small>Cliente ID: <code>{req.user_id.slice(0, 8)}...</code></small>
+                      <div><strong>Orçamento:</strong> {req.budget_estimate ? `R$ ${req.budget_estimate}` : 'A definir'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="client-details-col">
+            {selectedReq ? (
+              <div className="client-details-box">
+                <header className="req-details-header">
+                  <div>
+                    <h3>Acompanhar Demanda</h3>
+                    <p className="req-id-sub">ID: <code>{selectedReq.id}</code></p>
+                  </div>
+                  <div className="status-changer">
+                    <label>Status:</label>
+                    <select
+                      value={selectedReq.status}
+                      onChange={(e) => handleUpdateStatus(e.target.value)}
+                      className="admin-select"
+                    >
+                      <option value="pending">Pendente</option>
+                      <option value="in_progress">Em Análise</option>
+                      <option value="completed">Concluído</option>
+                    </select>
+                  </div>
+                </header>
+
+                {/* Formulário de Orçamento */}
+                <form onSubmit={handleUpdateBudget} className="budget-form">
+                  <label>Definir Estimativa de Orçamento (R$):</label>
+                  <div className="budget-input-group">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex: 2500.00"
+                      value={newBudget}
+                      onChange={(e) => setNewBudget(e.target.value)}
+                    />
+                    <button type="submit" className="btn btn-secondary">
+                      Salvar Orçamento
+                    </button>
+                  </div>
+                </form>
+
+                {/* Anexos */}
+                {reqAttachments.length > 0 && (
+                  <div className="admin-attachments">
+                    <h4>Anexos do Cliente:</h4>
+                    {reqAttachments.map((att) => (
+                      <div key={att.id} className="att-item">
+                        <span>📎 {att.file_name}</span>
+                        <button
+                          type="button"
+                          className="btn-download-link"
+                          onClick={() => handleDownloadAdminAttachment(att.file_path, att.file_name)}
+                        >
+                          Baixar Anexo
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Conversa 1:1 */}
+                <div className="admin-messages-section">
+                  <h4>Histórico da Conversa</h4>
+                  <div className="admin-msgs-box">
+                    {reqMessages.length === 0 ? (
+                      <p className="empty-list">Sem mensagens nesta solicitação.</p>
+                    ) : (
+                      reqMessages.map((m) => {
+                        const isYure = m.sender_id === user.id;
+                        return (
+                          <div key={m.id} className={`admin-msg-bubble ${isYure ? 'admin-me' : 'admin-client'}`}>
+                            <div className="msg-sender">{isYure ? 'Yure (Você)' : 'Cliente'}</div>
+                            <div className="msg-body">{m.message}</div>
+                            <span className="msg-time">{new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <form onSubmit={handleSendAdminReply} className="admin-reply-form">
+                    <input
+                      type="text"
+                      placeholder="Responder ao cliente..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                    />
+                    <button type="submit" disabled={!replyText.trim()} className="btn btn-primary">
+                      Enviar
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              <p className="empty-list">Selecione uma solicitação na lista para visualizar detalhes e mensagens.</p>
+            )}
+          </div>
+        </div>
       )}
+    </section>
+  )}
 
       <style>{`
         .admin-page {
@@ -507,6 +781,228 @@ export function Admin() {
           .form-row {
             grid-template-columns: 1fr;
           }
+        }
+
+        /* Abas Admin */
+        .admin-tabs {
+          display: flex;
+          gap: 0.8rem;
+          margin-bottom: 2rem;
+          border-bottom: 1px solid var(--card-border);
+          padding-bottom: 0.8rem;
+        }
+
+        .admin-tab-btn {
+          background: transparent;
+          border: 1px solid var(--card-border);
+          color: var(--text-color);
+          padding: 0.6rem 1.2rem;
+          border-radius: var(--radius-sm);
+          font-weight: 600;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .admin-tab-btn.active {
+          background: var(--accent-color);
+          color: #fff;
+          border-color: var(--accent-color);
+        }
+
+        /* Layout de Demandas de Clientes */
+        .client-admin-layout {
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 1.5rem;
+          align-items: flex-start;
+        }
+
+        @media (max-width: 768px) {
+          .client-admin-layout {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .client-req-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .client-req-card {
+          padding: 0.85rem;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--card-border);
+          cursor: pointer;
+          background: rgba(0, 0, 0, 0.02);
+          transition: all var(--transition-fast);
+        }
+
+        .client-req-card.active {
+          border-color: var(--accent-color);
+          background: rgba(30, 67, 149, 0.08);
+        }
+
+        .client-req-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.4rem;
+        }
+
+        .client-req-date {
+          font-size: 0.75rem;
+          opacity: 0.7;
+        }
+
+        .client-req-meta {
+          font-size: 0.85rem;
+        }
+
+        .status-pill {
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 0.2rem 0.5rem;
+          border-radius: 9999px;
+        }
+
+        .status-pending { background: #ffc107; color: #000; }
+        .status-in_progress { background: #17a2b8; color: #fff; }
+        .status-completed { background: #28a745; color: #fff; }
+
+        .client-details-box {
+          border: 1px solid var(--card-border);
+          border-radius: var(--radius-sm);
+          padding: 1.2rem;
+          background: rgba(0, 0, 0, 0.02);
+        }
+
+        .req-details-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.2rem;
+          padding-bottom: 0.8rem;
+          border-bottom: 1px solid var(--card-border);
+        }
+
+        .req-id-sub {
+          font-size: 0.75rem;
+          opacity: 0.7;
+        }
+
+        .status-changer {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .admin-select {
+          padding: 0.35rem 0.6rem;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--card-border);
+          background: var(--card-bg);
+          color: var(--text-color);
+        }
+
+        .budget-form {
+          margin-bottom: 1.2rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--card-border);
+        }
+
+        .budget-input-group {
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 0.4rem;
+        }
+
+        .admin-attachments {
+          margin-bottom: 1.2rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--card-border);
+        }
+
+        .att-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.4rem 0.6rem;
+          background: rgba(0, 0, 0, 0.04);
+          border-radius: var(--radius-sm);
+          margin-top: 0.4rem;
+          font-size: 0.85rem;
+        }
+
+        .btn-download-link {
+          background: transparent;
+          border: none;
+          color: var(--accent-color);
+          cursor: pointer;
+          font-weight: 600;
+          text-decoration: underline;
+        }
+
+        .admin-messages-section h4 {
+          margin-bottom: 0.6rem;
+          font-size: 0.95rem;
+        }
+
+        .admin-msgs-box {
+          max-height: 280px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+          padding: 0.8rem;
+          background: rgba(0, 0, 0, 0.03);
+          border-radius: var(--radius-sm);
+          margin-bottom: 0.8rem;
+        }
+
+        .admin-msg-bubble {
+          max-width: 85%;
+          padding: 0.6rem 0.9rem;
+          border-radius: var(--radius-sm);
+          font-size: 0.85rem;
+        }
+
+        .admin-me {
+          align-self: flex-end;
+          background: var(--accent-color);
+          color: #fff;
+        }
+
+        .admin-client {
+          align-self: flex-start;
+          background: var(--card-bg);
+          border: 1px solid var(--card-border);
+        }
+
+        .msg-sender {
+          font-size: 0.65rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          opacity: 0.8;
+          margin-bottom: 0.2rem;
+        }
+
+        .msg-time {
+          display: block;
+          font-size: 0.6rem;
+          opacity: 0.7;
+          text-align: right;
+          margin-top: 0.2rem;
+        }
+
+        .admin-reply-form {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .admin-reply-form input {
+          flex: 1;
         }
       `}</style>
     </main>

@@ -27,6 +27,12 @@ export function Navbar() {
             Sobre Mim
           </Link>
           <Link
+            to="/portal"
+            className={`nav-link ${location.pathname === '/portal' ? 'active' : ''}`}
+          >
+            Área do Cliente
+          </Link>
+          <Link
             to="/admin"
             className={`nav-link admin-link ${location.pathname === '/admin' ? 'active' : ''}`}
           >
