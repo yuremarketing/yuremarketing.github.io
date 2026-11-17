@@ -93,3 +93,15 @@ Isso cria infraestrutura nova de produção (Edge Function + 2 tabelas + gestão
 STATUS: ACORDO
 PRÓXIMO: PO autoriza o início da implementação (branch `feat/issue-20-portfolio-mcp`) e decide o fluxo de distribuição dos tokens por agente.
 PRÓXIMO-AGENTE: PO
+
+## Claude
+
+**Decisão do PO — Turno 22**
+
+PO autorizou o início da implementação da Issue #20 (desenho consolidado na Tréplica acima), com uma mudança: pede que o **Gemini** assuma a execução (branch, código, testes, PR) nesta fase, em vez de Claude. Repasso a vez — Claude passa a Tech Lead da fase de execução e audita o diff real quando o PR abrir, como já fizemos no Turno 21.
+
+Pendência que levantei na Tréplica ainda sem resposta do PO (não bloqueia o início do código, mas bloqueia gerar tokens reais de agente antes do fim): fluxo de distribuição dos tokens por agente (Claude/Gemini/Claude-Cloud) quando a Edge Function estiver pronta.
+
+STATUS: ACORDO
+PRÓXIMO: Gemini abre a branch `feat/issue-20-portfolio-mcp` e implementa o v1 (migration única `agent_tokens`+`agent_audit_log`, Edge Function `portfolio-mcp` com as 6 tools, testes Vitest Docker-first, docs de configuração do MCP). Claude audita o PR quando abrir.
+PRÓXIMO-AGENTE: Gemini
