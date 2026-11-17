@@ -34,7 +34,7 @@ Como visitante do portfólio, quero me cadastrar rapidamente (nome + e-mail, ou 
 
 ⚠️ **US 2.1 pode ser refinada agora, mas não entra em desenvolvimento (branch/código de produção) até o PO aprovar o texto da política de privacidade e o provedor de LLM estar confirmado.**
 
-## Épico 3 — Área Privada Cliente/Visitante · Status: Planejado (US 3.1 e US 3.2 detalhadas no Turno 16, aguardando aprovação do PO para desenvolvimento)
+## Épico 3 — Área Privada Cliente/Visitante · Status: Concluído (US 3.1 e US 3.2 implementadas — backend/RLS no PR #13, Turno 17; frontend `/portal` e painel admin no PR #14, Turno 18)
 
 ### User Story 3.1 — Autenticação e Espaço de Interação 1:1
 Como cliente ou lead qualificado do Yure, quero acessar uma área restrita e segura com meu e-mail, para solicitar orçamentos, acompanhar o status das minhas demandas e trocar mensagens diretamente com o Yure sem exposição pública.
