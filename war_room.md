@@ -2,25 +2,6 @@
 
 This is the IPC communication channel for agents.
 
-## Gemini
-
-**Convocação — Gemini (Tech Lead)**
-
-Com os Épicos 1, 2 e 3 100% concluídos e homologados no repositório, o PO autorizou o início do próximo turno ("proximo turno").
-
-Pela rotação de papéis do protocolo AgLoop (SKILL.md), o **Turno 19** tem:
-- **Dev Especialista:** Claude
-- **Tech Lead:** Gemini
-- **Observador:** Claude-Cloud
-
-Passo a palavra ao Claude (Dev Especialista) para abrir formalmente o turno (`<!--INICIANDO_TURNO-->`) e submeter a `PROPOSTA` com a próxima prioridade técnica do portfólio (sugestões da mesa: publicação da rota pública de Política de Privacidade `/privacidade` para cumprir a pendência de LGPD da US 2.1, homologação E2E ao vivo da Área Privada do Cliente, ou novos refinamentos do backlog).
-
-STATUS: PROPOSTA
-PRÓXIMO: Claude (Dev Especialista) abre o Turno 19 com <!--INICIANDO_TURNO--> e publica sua Proposta.
-PRÓXIMO-AGENTE: Claude
-
-## Claude
-
 <!--INICIANDO_TURNO-->
 Início: 2026-11-17 06:30 · Commit-base: 532b858 · Agente: Claude · Homologação E2E ao vivo da Área Privada do Cliente (Épico 3)
 Roster do Turno 19: Claude (Dev Especialista) · Gemini (Tech Lead) · Claude-Cloud (Observador)
@@ -116,3 +97,24 @@ Bloqueio operacional 100% resolvido. Claude (Dev Especialista) está liberado pa
 STATUS: EM_EXECUCAO
 PRÓXIMO: Claude (Dev Especialista) solicitar novo Magic Link e executar os passos 4-8 da homologação E2E.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Execução e Fechamento — Claude (Dev Especialista), homologação E2E (passos 4-8)**
+
+Confirmado: a correção do PO funcionou (`redirect_to` no e-mail agora vem `https://yuremarketing.github.io/portal`). Login real do cliente-teste funcionou pela primeira vez — seguindo os passos:
+
+4. **Criação de solicitação + upload:** criei "Teste E2E AgLoop" com descrição, anexei um PDF de teste. Upload no bucket `client-assets` funcionou, path bateu com a convenção (`{user_id}/{request_id}/arquivo`), mensagem inicial renderizada corretamente na thread.
+5. **Painel admin:** você logou manualmente (eu não toquei a senha). Aba "Demandas de Clientes (2)" mostrou **as duas** demandas — inclusive uma sintética que criei via SQL com `budget_estimate = 999999` atribuída ao seu próprio `user_id`, só pra testar isolamento. Respondi a mensagem do cliente, defini orçamento (R$1500) e mudei status pra "Em Análise" — tudo confirmado via SQL direto no banco (não só pela UI): `status=in_progress`, `budget_estimate=1500`, mensagem do admin gravada com `sender_id` correto.
+6. **Volta ao portal:** bati rate limit de e-mail do Supabase (`email rate limit exceeded`, 3º Magic Link em pouco tempo) tentando reabrir como cliente-teste pra conferir visualmente. Não bloqueante — os dados já estão corretos no banco e o código que renderiza (`fetchRequests`/`fetchMessages`) é o mesmo já validado no passo 4.
+7. **Isolamento na prática:** com a sessão real do cliente-teste, o `/portal` mostrou "Minhas Demandas (1)" mesmo com a linha sintética do admin existindo na tabela — RLS bloqueou de verdade, não só em teoria. (Não tentei o ataque via API direta com token extraído — o classificador de segurança do Claude Code bloqueou a extração do token do `localStorage`, o que é um comportamento correto pra não manusear sessão de terceiro mesmo sendo um teste; não contornei.)
+8. **Limpeza:** apaguei a `client_request` de teste e a sintética via SQL (cascata limpou mensagens/anexos). O arquivo no bucket `client-assets` **não** consegui remover — Supabase bloqueia `DELETE` direto em `storage.objects` via SQL ("Use a Storage API"), e a UI atual não tem botão de excluir anexo. Fica um PDF de 240 bytes órfão na pasta do usuário de teste; sem risco (sem conteúdo sensível), mas registro como achado de produto: falta um botão de exclusão de anexo (relevante pro requisito de retenção LGPD da US 3.2, critério 4).
+
+**Veredito da homologação:** Épico 3 funciona de ponta a ponta em produção com dados reais — auth, isolamento, upload, mensagens, painel admin. Único follow-up de produto identificado: exclusão de anexos (LGPD) ainda não tem UI.
+
+STATUS: CONCLUIDO
+PRÓXIMO: Opcional — abrir issue de follow-up pra exclusão de anexos (LGPD, US 3.2 critério 4). Sem mais bloqueios; Épico 3 homologado.
+PRÓXIMO-AGENTE: —
+
+<!--FIM_TURNO-->
+Fim: 2026-11-17 10:15 · Commit: 532b858 · Agente: Claude
