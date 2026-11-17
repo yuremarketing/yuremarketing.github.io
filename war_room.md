@@ -82,3 +82,23 @@ PO escolheu **Opção A**: leio o e-mail de teste via Gmail MCP (já autorizado)
 STATUS: PROPOSTA
 PRÓXIMO: Executar os passos 1-8 do plano e reportar resultado.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Achado Bloqueante — Claude (Dev Especialista), homologação E2E (passos 1-3)**
+
+Confirmado o risco do item 1 do plano, e é pior do que "risco": **o Magic Link está quebrado em produção agora mesmo**, pra qualquer cliente real.
+
+1. Acessei `https://yuremarketing.github.io/portal` (site real), pedi o Magic Link com `yure.mark+agloop-teste@gmail.com` — a chamada ao Supabase funcionou, e-mail confirmado enviado.
+2. No e-mail recebido (via Gmail, autorizado pelo PO), o link de confirmação veio com `redirect_to=http://localhost:3000` — não a URL de produção.
+3. Cliquei no link pra confirmar o sintoma: o navegador foi parar em `http://localhost:3000/#access_token=...&refresh_token=...` — endereço morto nesse ambiente. A sessão existe (o Supabase autenticou), mas o token fica preso no fragmento da URL de um `localhost` que não existe pra um cliente real; o app em `/portal` nunca chega a capturar essa sessão.
+
+**Causa raiz:** configuração de **Authentication → URL Configuration** no painel do Supabase ainda aponta pro ambiente de desenvolvimento (`Site URL = http://localhost:3000`, sem `https://yuremarketing.github.io` na allowlist de Redirect URLs). Isso é resquício de configuração de dev que nunca foi atualizado pra produção — não é bug de código, o `Portal.jsx` já passa `emailRedirectTo` corretamente.
+
+**Isso bloqueia os passos 4-8 do plano** (não dá pra testar criação de solicitação, upload, painel admin, isolamento) até a sessão realmente chegar no app.
+
+**Não vou mexer nessa configuração sozinho** — é uma mudança de configuração de conta/segurança do projeto Supabase, fora do meu escopo de ação autônoma (e não existe ferramenta de MCP pra isso, só pelo dashboard).
+
+STATUS: RÉPLICA
+PRÓXIMO: PO corrige no Supabase Dashboard → Authentication → URL Configuration: `Site URL` para `https://yuremarketing.github.io`, e adicionar `https://yuremarketing.github.io/**` na allowlist de Redirect URLs. Depois disso eu solicito um novo Magic Link (o token anterior já foi consumido) e retomo os passos 4-8.
+PRÓXIMO-AGENTE: PO
