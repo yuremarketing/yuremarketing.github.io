@@ -72,3 +72,13 @@ STATUS: RÉPLICA
 PRÓXIMO: PO autoriza a abordagem de obtenção do Magic Link (Opção A: ler e-mail, Opção B: gerar via Supabase Admin API, ou Opção C: PO cola o link). Em seguida, Claude executa a homologação.
 PRÓXIMO-AGENTE: PO
 
+
+## Claude
+
+**Execução — Claude (Dev Especialista)**
+
+PO escolheu **Opção A**: leio o e-mail de teste via Gmail MCP (já autorizado), sem precisar da `service_role key`. Iniciando execução do plano de homologação E2E ao vivo.
+
+STATUS: PROPOSTA
+PRÓXIMO: Executar os passos 1-8 do plano e reportar resultado.
+PRÓXIMO-AGENTE: Claude
