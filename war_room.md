@@ -105,3 +105,36 @@ Pendência que levantei na Tréplica ainda sem resposta do PO (não bloqueia o i
 STATUS: ACORDO
 PRÓXIMO: Gemini abre a branch `feat/issue-20-portfolio-mcp` e implementa o v1 (migration única `agent_tokens`+`agent_audit_log`, Edge Function `portfolio-mcp` com as 6 tools, testes Vitest Docker-first, docs de configuração do MCP). Claude audita o PR quando abrir.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Execução e PR Aberto — Gemini (Dev Especialista)**
+
+Implementação da Issue #20 finalizada com sucesso na branch `feat/issue-20-portfolio-mcp` e [PR #22](https://github.com/yuremarketing/yuremarketing.github.io/pull/22) aberto para auditoria do Tech Lead (Claude).
+
+### Resumo do que foi entregue:
+1. **Infraestrutura de Dados (`supabase/migrations/20261117160000_mcp_agent_infrastructure.sql`):**
+   - Criação da tabela `public.agent_tokens` com hash SHA-256, escopos granulares (`projects:read`, `projects:write`, `projects:delete`), `expires_at` e `revoked_at`.
+   - Criação da tabela `public.agent_audit_log` para rastreabilidade de todas as ações de escrita executadas pelos agentes.
+   - Função utilitária com `security definer` (`public.create_agent_token`) restrita a administradores autenticados para emissão e exibição única de credenciais em texto puro.
+2. **Supabase Edge Function (`supabase/functions/portfolio-mcp/index.ts`):**
+   - Servidor MCP remoto operando em transporte **Stateless HTTP (JSON-RPC 2.0)** para suporte nativo e estável ao runtime efêmero do Deno Deploy / Supabase.
+   - Ferramentas expostas: `projects_list`, `project_get`, `project_enrich_from_url`, `project_create`, `project_update`, `project_set_visibility`, `project_delete`.
+   - Exclusão irreversível com dupla proteção: escopo dedicado `projects:delete` + argumento `confirm: true`.
+   - Autenticação por token Bearer e auditoria síncrona persistida em `agent_audit_log` para qualquer operação de escrita.
+3. **Camada de Serviço Modular e Mitigação SSRF (`src/lib/portfolioMcpService.js`):**
+   - Proteção rigorosa contra SSRF em `project_enrich_from_url`: protocolo HTTPS obrigatório, bloqueio de loopback (`127.0.0.0/8`, `::1`), redes privadas (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), metadados de nuvem (`169.254.169.254`, `metadata.google.internal`), timeout de 5s e leitura limitada a 512 KB.
+   - Extração via API pública do GitHub para repositórios.
+4. **Qualidade & Docker First:**
+   - 16 novos testes unitários em `src/lib/portfolioMcpService.test.jsx`.
+   - Execução dentro do Docker (`docker compose run --rm app npm test`): **26/26 testes aprovados (100%)**.
+   - Build de produção verificado com sucesso (`docker compose run --rm app npm run build`).
+5. **Documentação e Governança:**
+   - Guia completo de configuração e uso em `docs/gestao/mcp-portfolio.md` com exemplos para Claude Code (`.mcp.json`), Gemini CLI e Cursor.
+   - Atualização em `AGENTS.md` e Marco M5 registrado em `docs/gestao/roadmap.md`.
+   - `.gitignore` atualizado para proteger `.mcp.json`.
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Claude) audita o diff real do PR #22 e os testes antes do parecer e validação final do PO.
+PRÓXIMO-AGENTE: Claude
+
