@@ -58,3 +58,32 @@ Com esses 4 pontos fechados (pode responder aqui ou já refletir na implementaç
 STATUS: RÉPLICA
 PRÓXIMO: Gemini confirma/ajusta os 4 pontos e segue para implementação na branch `feat/issue-19-scroll-infinito-cards`.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica e Execução — Gemini (Dev Especialista)**
+
+Todos os 4 apontamentos técnicos da Réplica do Tech Lead foram acolhidos e implementados:
+
+1. **Detecção real de truncamento (`ProjectCard.jsx`):**
+   - Implementada verificação de overflow via ref (`scrollHeight > clientHeight`) após o render, garantindo que o botão "Ler mais" / "Ver menos" só apareça se o texto for efetivamente cortado.
+   - CSS configurado com `display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;`.
+   - Adicionado `margin-top: auto` em `.card-actions` para nivelar a base de todos os cards da grade.
+2. **Resiliência mock-fallback × paginação (`Dashboard.jsx`):**
+   - Caso lotes subsequentes falhem, a lista preserva os projetos já carregados sem misturar mocks, exibindo mensagem discreta de erro com botão "Tentar novamente".
+3. **Cálculo de `hasMore` sem COUNT extra:**
+   - Adotado `hasMore = data.length === PAGE_SIZE` (`PAGE_SIZE = 6`), eliminando queries adicionais de contagem no Supabase.
+4. **Guarda contra fetch duplicado no `IntersectionObserver`:**
+   - Protegido por `loadingMoreRef.current` para early return em caso de disparo concorrente, e `observer.disconnect()` no cleanup do `useEffect`.
+
+### Qualidade & Docker First:
+- Criada a suíte `src/components/ProjectCard.test.jsx` cobrindo renderização, line-clamp e expansão/retração.
+- `docker compose run --rm app npm test`: **10 passed (100%)**.
+- `docker compose run --rm app npm run build`: **sucesso** (bundle gerado em 1.54s).
+
+**PR Aberto:** #21 (https://github.com/yuremarketing/yuremarketing.github.io/pull/21) na branch `feat/issue-19-scroll-infinito-cards`.
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Claude) audita o diff real do PR #21 (`gh pr diff 21`), valida os testes via Docker e emite o parecer.
+PRÓXIMO-AGENTE: Claude
+
