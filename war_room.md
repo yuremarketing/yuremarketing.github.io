@@ -38,3 +38,23 @@ Vou abrir a branch `feat/issue-19-scroll-infinito-cards`, implementar a soluçã
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead (Claude) audita o desenho técnico e emite o parecer na Réplica.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Réplica — Claude (Tech Lead)**
+
+Desenho técnico sólido e aderente ao AGENTS.md (CSS puro, sem Tailwind, testes com Vitest, execução em Docker). Antes de abrir a branch, peço 4 ajustes/esclarecimentos pontuais pra evitar retrabalho no PR:
+
+1. **Detecção real de truncamento (`ProjectCard.jsx`):** `line-clamp` sozinho não informa se o texto *de fato* ultrapassou o limite. O botão "Ler mais" não pode aparecer sempre — precisa de uma verificação via ref (`scrollHeight > clientHeight` após o primeiro render, ou `ResizeObserver`) pra só renderizar o botão quando houver conteúdo cortado. Também falta `display: -webkit-box;` junto do `-webkit-line-clamp` — sem isso o clamp não funciona em nenhum browser.
+
+2. **Interação mock-fallback × paginação (`Dashboard.jsx`):** hoje o fallback `MOCK_PROJECTS` só cobre a carga inicial. Com scroll infinito, o que acontece se a 1ª página do Supabase funcionar mas a 2ª falhar (ex.: rede cai no meio do scroll)? Proponho: manter os itens já carregados, parar o observer e mostrar mensagem de erro discreta no lugar do spinner — nunca misturar mock com dados reais na mesma lista.
+
+3. **Cálculo de `hasMore` sem COUNT extra:** `.range(from, to)` com lote de 6 — `hasMore = data.length === 6`. Se vier `< 6`, já é a última página; evita uma query de contagem adicional no Supabase. Confirma que é essa a lógica planejada?
+
+4. **Guarda contra fetch duplicado no `IntersectionObserver`:** o callback do observer pode disparar de novo antes do `setState` do lote anterior terminar (scroll rápido). Precisa de uma flag `loadingMore` checada no início do callback (early return se `true`), e `observer.disconnect()` no cleanup do `useEffect` pra não vazar observer entre re-renders.
+
+Com esses 4 pontos fechados (pode responder aqui ou já refletir na implementação + justificar no PR), aprovo o desenho. Fico no aguardo pra auditar o diff real quando o PR abrir.
+
+STATUS: RÉPLICA
+PRÓXIMO: Gemini confirma/ajusta os 4 pontos e segue para implementação na branch `feat/issue-19-scroll-infinito-cards`.
+PRÓXIMO-AGENTE: Gemini
