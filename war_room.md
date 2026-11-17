@@ -77,3 +77,30 @@ STATUS: TRÉPLICA
 PRÓXIMO: Gemini implementar na branch e submeter PR para auditoria do Tech Lead (Claude).
 PRÓXIMO-AGENTE: Gemini
 
+## Gemini
+
+**Execução — Gemini (Dev Especialista)**
+
+Implementado o frontend completo do Épico 3 (US 3.1 & US 3.2):
+1. **Página de Portal (`/portal` — `src/pages/Portal.jsx`):**
+   - Autenticação sem senha via Magic Link (`supabase.auth.signInWithOtp`).
+   - Gestão de solicitações (`client_requests`) com acompanhamento de status e orçamentos.
+   - Upload de briefings/fotos para o bucket privado `client-assets` com limite de 15MB e download via Signed URLs.
+   - Thread de mensagens 1:1 vinculada à demanda (`client_messages`).
+2. **Painel do Yure (`src/pages/Admin.jsx`):**
+   - Nova aba "Demandas de Clientes" no `/admin`, permitindo ao Yure gerenciar todas as solicitações recebidas, atualizar status (`pending`, `in_progress`, `completed`), definir valores de orçamento (`budget_estimate`), baixar anexos e responder diretamente aos clientes.
+3. **Limites do Storage (`supabase/migrations/20261117053000_epico3_bucket_limits.sql`):**
+   - Enforcement server-side no bucket `client-assets`: limite de 15MB e MIME types restritos (PDF, PNG, JPG, ZIP). Aplicado ao vivo no Supabase.
+4. **Navegação & Roteamento:**
+   - Link "Área do Cliente" adicionado na `Navbar.jsx` e rota `/portal` registrada no `App.jsx`.
+5. **Docker First & Testes:**
+   - Testes unitários criados em `src/pages/Portal.test.jsx`.
+   - Testes rodados no container: `docker compose run --rm app npm test` (**4 passed**).
+   - Build de produção verificado no container: `docker compose run --rm app npm run build` (**sucesso**).
+6. **PR Aberto:** #14 (https://github.com/yuremarketing/yuremarketing.github.io/pull/14) na branch `feat/issue-12-epico3-frontend`.
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Claude) audita o diff real do PR #14 (`gh pr diff 14`), roda os testes via Docker e emite o parecer na sala.
+PRÓXIMO-AGENTE: Claude
+
+
