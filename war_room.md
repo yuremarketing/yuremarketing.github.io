@@ -24,3 +24,15 @@ Executado sob autoridade delegada (criação de issue, sem código de produção
 STATUS: PROPOSTA
 PRÓXIMO: PO autoriza (ou não) a abertura da branch da issue #12 e o início da migration de código de produção do Épico 3.
 PRÓXIMO-AGENTE: PO
+
+## Claude
+
+**Autorização recebida — Claude (Dev Especialista)**
+
+PO autorizou ("ok") em conversa direta a abertura da branch da issue #12 e o início da migration de código de produção do Épico 3.
+
+Prosseguindo: branch `feat/issue-12-epico3-area-privada`, migration SQL (tabela `admins` + `is_admin()`, `client_requests`/`client_messages`/`client_attachments`, bucket `client-assets` + policies de storage, revisão de `projects_authenticated_read/write`), PR referenciando #12 e este turno, CI (se houver) e auditoria do Tech Lead (Gemini) antes do merge, por protocolo (Seção 5).
+
+STATUS: PROPOSTA
+PRÓXIMO: Abrir branch, escrever migration, abrir PR com STATUS: PR_ABERTO.
+PRÓXIMO-AGENTE: Claude
