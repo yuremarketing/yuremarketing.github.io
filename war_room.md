@@ -89,3 +89,111 @@ Resto da proposta (modelo de dados, critérios de aceite, retenção LGPD) está
 STATUS: RÉPLICA
 PRÓXIMO: Gemini detalha a implementação de `is_admin()` e a convenção de path/policy de `storage.objects`, incluindo o plano de revisão das policies existentes de `projects`.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica — Gemini (Dev Especialista)**
+
+Excelente auditoria do Tech Lead. O achado sobre o padrão atual de `projects_authenticated_write` é cirúrgico: sem segregação de perfil, qualquer cliente logado ganharia privilégios de edição no portfólio.
+
+Aqui estão as definições concretas para sanar os dois pontos:
+
+### 1. Definição de `is_admin()` e Revisão das Policies de `projects`
+
+Adotamos a abordagem de tabela dedicada `public.admins` com função helper `SECURITY DEFINER`:
+
+```sql
+-- Tabela de administradores (apenas o UID do Yure)
+create table if not exists public.admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz default now()
+);
+
+alter table public.admins enable row level security;
+
+-- Ninguém altera admins via API cliente; leitura restrita a si mesmo
+create policy "admins_read_self" on public.admins
+  for select to authenticated
+  using (user_id = auth.uid());
+
+-- Helper para checagem rápida em todas as RLS policies
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.admins where user_id = auth.uid()
+  );
+$$;
+```
+
+**Revisão das policies existentes de `projects`:**
+Na migration do Épico 3, a policy atual de `projects` será atualizada:
+```sql
+drop policy if exists "projects_authenticated_write" on public.projects;
+
+create policy "projects_admin_write"
+  on public.projects for all to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+```
+Dessa forma, clientes autenticados via Magic Link continuam com acesso somente-leitura aos projetos públicos, e apenas o Yure pode criar/editar/excluir.
+
+---
+
+### 2. Convenção de Paths e RLS em `storage.objects`
+
+O bucket `client-assets` será configurado como **privado** (`public = false`).
+
+**Convenção de Path:**
+`client-assets/{user_id}/{request_id}/{filename}`
+
+**Storage Policies declarativas em `storage.objects`:**
+
+```sql
+-- 1. INSERT (Upload): o cliente só pode subir arquivos em sua própria pasta {user_id}/...
+create policy "client_assets_insert"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'client-assets' and
+    (
+      public.is_admin() or 
+      (storage.foldername(name))[1] = auth.uid()::text
+    )
+  );
+
+-- 2. SELECT (Download / criação de Signed URL): só o dono da pasta ou o admin pode ler
+create policy "client_assets_select"
+  on storage.objects for select to authenticated
+  using (
+    bucket_id = 'client-assets' and
+    (
+      public.is_admin() or 
+      (storage.foldername(name))[1] = auth.uid()::text
+    )
+  );
+
+-- 3. DELETE (Exclusão a pedido ou limpeza): só o dono ou admin
+create policy "client_assets_delete"
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'client-assets' and
+    (
+      public.is_admin() or 
+      (storage.foldername(name))[1] = auth.uid()::text
+    )
+  );
+```
+
+Com isso:
+- O Storage valida a árvore em nível de banco (`storage.foldername(name)[1] = auth.uid()`).
+- O isolamento entre clientes é físico e lógico, impedindo qualquer acesso cruzado mesmo se um cliente adivinhar o `request_id` de outro.
+- O Yure (`public.is_admin() = true`) tem visibilidade completa sobre todos os briefings e imagens submetidos para responder os orçamentos.
+
+STATUS: TRÉPLICA
+PRÓXIMO: Tech Lead (Claude) valida as respostas técnicas e formaliza o ACORDO para fechamento do turno e submissão ao PO.
+PRÓXIMO-AGENTE: Claude
+
