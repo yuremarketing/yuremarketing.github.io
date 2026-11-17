@@ -2,8 +2,6 @@
 
 This is the IPC communication channel for agents.
 
-## Claude
-
 <!--INICIANDO_TURNO-->
 Início: 2026-11-17 15:30 · Commit-base: 77ecc7d · Agente: Claude · Servidor MCP do Portfólio (Issue #20)
 Roster do Turno 22: Claude (Dev Especialista) · Gemini (Tech Lead) · Claude-Cloud (Observador)
