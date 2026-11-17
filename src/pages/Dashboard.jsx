@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ProjectCard } from '../components/ProjectCard';
 import { RecentRepos } from '../components/RecentRepos';
 import { Link } from 'react-router-dom';
+
+const PAGE_SIZE = 6;
 
 const MOCK_PROJECTS = [
   {
@@ -27,30 +29,118 @@ const MOCK_PROJECTS = [
 export function Dashboard() {
   const [projects, setProjects] = useState(MOCK_PROJECTS);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(null);
 
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const { supabase } = await import('../lib/supabase');
-        if (!supabase) return;
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('visible', true)
-          .order('created_at', { ascending: false });
+  const sentinelRef = useRef(null);
+  const pageRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(false);
 
-        if (!error && data && data.length > 0) {
+  const fetchInitialProjects = async () => {
+    try {
+      const { supabase } = await import('../lib/supabase');
+      if (!supabase) return;
+      setLoading(true);
+      setLoadMoreError(null);
+
+      const from = 0;
+      const to = PAGE_SIZE - 1;
+
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('visible', true)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (!error && data) {
+        if (data.length > 0) {
           setProjects(data);
         }
-      } catch (e) {
-        console.warn('Usando projetos mockados como fallback', e);
-      } finally {
-        setLoading(false);
+        const more = data.length === PAGE_SIZE;
+        setHasMore(more);
+        hasMoreRef.current = more;
+        pageRef.current = 1;
       }
+    } catch (e) {
+      console.warn('Usando projetos mockados como fallback', e);
+      setHasMore(false);
+      hasMoreRef.current = false;
+    } finally {
+      setLoading(false);
     }
-    fetchProjects();
+  };
+
+  const fetchMoreProjects = useCallback(async () => {
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setLoadMoreError(null);
+
+    try {
+      const { supabase } = await import('../lib/supabase');
+      if (!supabase) return;
+
+      const currentPage = pageRef.current;
+      const from = currentPage * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('visible', true)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        setLoadMoreError('Não foi possível carregar mais projetos.');
+        setHasMore(false);
+        hasMoreRef.current = false;
+      } else if (data) {
+        if (data.length > 0) {
+          setProjects((prev) => [...prev, ...data]);
+        }
+        const more = data.length === PAGE_SIZE;
+        setHasMore(more);
+        hasMoreRef.current = more;
+        pageRef.current = currentPage + 1;
+      }
+    } catch (err) {
+      setLoadMoreError('Erro de conexão ao carregar mais projetos.');
+      setHasMore(false);
+      hasMoreRef.current = false;
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchInitialProjects();
+  }, []);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && hasMoreRef.current && !loadingMoreRef.current) {
+          fetchMoreProjects();
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, fetchMoreProjects]);
 
   return (
     <main className="dashboard-page container animate-fade-in">
@@ -79,11 +169,28 @@ export function Dashboard() {
         {loading ? (
           <div className="loading-container">Carregando projetos...</div>
         ) : (
-          <div className="projects-grid">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
+          <>
+            <div className="projects-grid">
+              {projects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+
+            {hasMore && (
+              <div ref={sentinelRef} className="scroll-sentinel">
+                {loadingMore && <div className="loading-more">Carregando mais projetos...</div>}
+              </div>
+            )}
+
+            {loadMoreError && (
+              <div className="load-more-error">
+                <span>{loadMoreError}</span>
+                <button type="button" onClick={fetchMoreProjects} className="btn-retry">
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 
@@ -166,6 +273,48 @@ export function Dashboard() {
           text-align: center;
           padding: 3rem;
           opacity: 0.7;
+        }
+
+        .scroll-sentinel {
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 1.5rem;
+        }
+
+        .loading-more {
+          font-family: var(--font-mono);
+          font-size: 0.88rem;
+          opacity: 0.7;
+        }
+
+        .load-more-error {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
+          margin-top: 1.5rem;
+          font-size: 0.88rem;
+          color: var(--text-color);
+          opacity: 0.85;
+        }
+
+        .btn-retry {
+          background: transparent;
+          border: 1px solid var(--accent-color);
+          color: var(--accent-color);
+          border-radius: var(--radius-sm);
+          padding: 0.3rem 0.8rem;
+          font-size: 0.82rem;
+          cursor: pointer;
+          font-weight: 600;
+          transition: all var(--transition-fast);
+        }
+
+        .btn-retry:hover {
+          background: var(--accent-color);
+          color: #ffffff;
         }
 
         @media (max-width: 768px) {
