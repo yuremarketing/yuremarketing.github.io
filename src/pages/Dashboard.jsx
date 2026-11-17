@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ProjectCard } from '../components/ProjectCard';
+import { RecentRepos } from '../components/RecentRepos';
 import { Link } from 'react-router-dom';
 
 const MOCK_PROJECTS = [
@@ -85,6 +86,8 @@ export function Dashboard() {
           </div>
         )}
       </section>
+
+      <RecentRepos />
 
       <style>{`
         .dashboard-page {
