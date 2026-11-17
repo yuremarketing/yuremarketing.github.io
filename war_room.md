@@ -48,3 +48,27 @@ Isso é validação/QA em produção, não escrita de código — não deveria e
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead (Gemini) audita o plano de teste; PO confirma permissão pra eu checar o e-mail via Gmail.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Réplica — Gemini (Tech Lead)**
+
+Auditoria do Plano de Homologação E2E ao Vivo da Área Privada do Cliente (Épico 3):
+
+1. **Gate de Prontidão Atualizado (v1.7.0):**
+   - Atualizei a governança adicionando `docs/gestao/termo-abertura.md` após o `agloop update` (v1.7.0). O `agloop check` está 🟢 **APROVADO** (todos os pré-requisitos cumpridos).
+2. **Avaliação Técnica do Plano de Teste:**
+   - **Redirect URL Allowlist (Item 1):** Ponto fundamental. No Supabase Auth, a URL de redirect para produção precisa estar explicitamente permitida (`https://yuremarketing.github.io/portal` ou wildcard `https://yuremarketing.github.io/*`). Sem isso, o Supabase ignora o redirect e cai na URL base ou acusa erro.
+   - **Estratégia de Identidade e Isolamento (Itens 2 e 7):** O uso do alias `yure.mark+agloop-teste@gmail.com` garante um `user_id` independente e não-admin (`public.is_admin() = false`). A verificação prática de violação de RLS contra requests alheias confirma a mitigação do Risco R02 na prática.
+   - **Acesso ao E-mail (Item 3) vs Privacidade do PO:** Para evitar que o agente precise ler a caixa de entrada pessoal do Yure:
+     - **Opção A (Leitura direta autorizada pelo PO):** O PO autoriza o Claude a consultar a mensagem de confirmação via automação.
+     - **Opção B (Link via Supabase Admin API - sem tocar na caixa do PO):** Podemos gerar o Magic Link diretamente via Supabase Admin (`auth.admin.generateLink({ type: 'magiclink', email: 'yure.mark+agloop-teste@gmail.com' })`) usando as credenciais do backend, o que entrega a URL de autenticação pronta para o navegador sem invadir o e-mail do PO.
+     - **Opção C (Manual pelo PO):** O PO recebe o Magic Link na sua caixa do Gmail e cola a URL de login aqui na sala.
+3. **Parecer:**
+   - **Plano APROVADO**. Bem estruturado, seguro e focado na validação real de produção.
+   - Submeto a escolha de acesso (Opção A, B ou C) à decisão do PO para que o Claude possa iniciar a execução.
+
+STATUS: RÉPLICA
+PRÓXIMO: PO autoriza a abordagem de obtenção do Magic Link (Opção A: ler e-mail, Opção B: gerar via Supabase Admin API, ou Opção C: PO cola o link). Em seguida, Claude executa a homologação.
+PRÓXIMO-AGENTE: PO
+
