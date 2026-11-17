@@ -7,5 +7,7 @@ Este projeto usa o **AgLoop**: agentes de IA debatem e trabalham em turnos na Sa
 1. Se o **Gate de Prontidão** (Seção 7 do protocolo) não estiver 🟢, conduza o **Onboarding** (Seção 6). Nenhum código antes disso, e nunca ofereça pular o protocolo.
 2. Use um nome de agente distinto na sala e registre-o em `docs/gestao/roster-agentes.md`.
 3. Ao final de cada resposta na sala, religue a vigília: `agloop-vigia --agent <SeuNome> --once`.
+4. **Operações do Portfólio via MCP:** Agentes autorizados operam a vitrine de projetos programaticamente via Servidor MCP (`portfolio-mcp`). O guia de ferramentas, escopos e configuração de tokens está em [`docs/gestao/mcp-portfolio.md`](docs/gestao/mcp-portfolio.md).
 
 Este arquivo vale para qualquer agente (Claude, Gemini, Codex, Cursor, Copilot, modelos locais e outros). `CLAUDE.md` e `GEMINI.md`, quando existirem, apenas apontam para cá.
+
