@@ -102,3 +102,36 @@ Confirmado o risco do item 1 do plano, e é pior do que "risco": **o Magic Link 
 STATUS: RÉPLICA
 PRÓXIMO: PO corrige no Supabase Dashboard → Authentication → URL Configuration: `Site URL` para `https://yuremarketing.github.io`, e adicionar `https://yuremarketing.github.io/**` na allowlist de Redirect URLs. Depois disso eu solicito um novo Magic Link (o token anterior já foi consumido) e retomo os passos 4-8.
 PRÓXIMO-AGENTE: PO
+
+## Claude
+
+<!--INICIANDO_TURNO-->
+Início: 2026-11-17 07:00 · Commit-base: 532b858 · Agente: Claude · Vitrine de "Repositórios Recentes" (última atividade de 6 meses)
+Roster do Turno 20: Claude (Dev Especialista) · Gemini (Tech Lead) · Claude-Cloud (Observador)
+
+**Nota:** Turno 19 continua aberto/pausado (homologação E2E do Épico 3, bloqueada na correção do Supabase Auth URL Configuration pelo PO). Este é um turno novo e independente, aberto por demanda direta do PO em conversa comigo.
+
+## Turno 20 — Claude (2026-11-17)
+
+## Claude
+
+**Proposta — Claude (Dev Especialista)**
+
+PO pediu uma nova seção no portfólio apresentando os repositórios em que trabalhou nos últimos 6 meses.
+
+### Levantamento (via `gh repo list`/`gh repo view`, dados reais)
+13 repositórios com push nos últimos 6 meses (desde 2026-05-17); 5 privados, 8 públicos. PO decidiu: **só os públicos, dados ao vivo via API do GitHub** — evita expor qualquer credencial (repo privado exigiria token no frontend público, inaceitável).
+
+Dos 8 públicos, 1 (`engenharia`) está **vazio** (sem linguagem/arquivo) — excluo automaticamente, não há o que mostrar. Ficam 7: `AgLoop`, `yuremarketing.github.io`, `JuanNutri7IA`, `We-re_going_to_blowup_everything` (protótipo de jogo em Godot/GDScript — nome de repo não é apresentável, vou dar um título de exibição amigável tipo "Protótipo de Jogo — Godot Engine", sem renomear o repo real), `cloneIA`, `RuivoBarber`, `governai`.
+
+### Desenho técnico
+- Novo componente `src/components/RecentRepos.jsx`, consumido pelo `Dashboard.jsx` (ou seção própria na home).
+- Fetch client-side em `https://api.github.com/users/yuremarketing/repos?sort=pushed&per_page=100` — endpoint público, sem autenticação, sem segredo no bundle.
+- Filtro: `pushed_at >= hoje - 6 meses`, excluir forks, excluir repos sem linguagem (`language == null`), mapa local de `{ nome_repo: título_de_exibição }` só pra ajustar os 1-2 casos de nome feio (não mexe no nome real do repo no GitHub).
+- Card por repo: título de exibição, descrição (ou fallback se vazia), linguagem principal, estrelas, link pro repo. Sem chamada autenticada, sem rate-limit problemático pro tráfego esperado de um portfólio pessoal (60 req/hora por IP visitante, 1 request por carga de página).
+- CSS vanilla, dark/light, seguindo `.agents/AGENTS.md`.
+- Testes Vitest cobrindo o filtro (exclui vazio/fork, respeita janela de 6 meses) e render básico.
+
+STATUS: PROPOSTA
+PRÓXIMO: Tech Lead (Gemini) audita o desenho (principalmente o filtro client-side e a ausência de qualquer token/segredo).
+PRÓXIMO-AGENTE: Gemini
