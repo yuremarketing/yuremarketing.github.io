@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 export function ProjectCard({ project }) {
   const { title, description, url, github_url, tags = [], image_url } = project;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+  const descRef = useRef(null);
+
+  useEffect(() => {
+    if (descRef.current) {
+      const hasOverflow = descRef.current.scrollHeight > descRef.current.clientHeight;
+      setCanExpand(hasOverflow);
+    }
+  }, [description]);
 
   return (
     <article className="glass-panel project-card">
@@ -13,7 +23,24 @@ export function ProjectCard({ project }) {
 
       <div className="card-content">
         <h3 className="card-title">{title}</h3>
-        <p className="card-description">{description}</p>
+        <div className="card-description-wrapper">
+          <p
+            ref={descRef}
+            className={`card-description ${!isExpanded ? 'clamped' : ''}`}
+          >
+            {description}
+          </p>
+          {canExpand && (
+            <button
+              type="button"
+              className="btn-toggle-expand"
+              onClick={() => setIsExpanded(!isExpanded)}
+              aria-expanded={isExpanded}
+            >
+              {isExpanded ? 'Ver menos' : 'Ler mais'}
+            </button>
+          )}
+        </div>
 
         {tags.length > 0 && (
           <div className="card-tags">
@@ -78,12 +105,41 @@ export function ProjectCard({ project }) {
           margin-bottom: 0.5rem;
         }
 
+        .card-description-wrapper {
+          margin-bottom: 1.2rem;
+        }
+
         .card-description {
           font-size: 0.95rem;
           opacity: 0.85;
           line-height: 1.5;
-          margin-bottom: 1.2rem;
-          flex-grow: 1;
+          margin: 0;
+        }
+
+        .card-description.clamped {
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .btn-toggle-expand {
+          background: none;
+          border: none;
+          color: var(--accent-color);
+          font-size: 0.85rem;
+          font-weight: 600;
+          padding: 0.3rem 0;
+          cursor: pointer;
+          margin-top: 0.3rem;
+          display: inline-block;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          transition: opacity var(--transition-fast);
+        }
+
+        .btn-toggle-expand:hover {
+          opacity: 0.8;
         }
 
         .card-tags {
@@ -109,6 +165,7 @@ export function ProjectCard({ project }) {
         .card-actions {
           display: flex;
           gap: 0.8rem;
+          margin-top: auto;
         }
 
         .btn {
