@@ -5,17 +5,17 @@
 - **Público:** recrutadores técnicos / gestores de contratação, e clientes em potencial (freelance/consultoria).
 - **Sucesso:** nº de contatos recebidos (via formulário ou LinkedIn) originados pelo portfólio.
 
-## Épico 1 — Vitrine de Projetos · Status: Planejado
+## Épico 1 — Vitrine de Projetos · Status: Concluído (US 1.1 entregue, PRs #4 e #6)
 
 ### User Story 1.1
 Como recrutador, quero ver rapidamente os projetos mais relevantes do Yure com contexto técnico (stack, problema resolvido, resultado), para decidir se ele é fit pra vaga sem precisar pedir mais informação.
 
-**Critérios de aceite:**
+Critérios de aceite:
 - Lista de projetos visível na home, sem precisar navegar mais de 1 clique.
 - Cada projeto mostra: nome, descrição curta, stack usada e link (demo e/ou repositório).
 - Lighthouse Performance Score ≥ 0.90 em mobile, FCP ≤ 1.5s e LCP ≤ 3.0s sob perfil simulado Slow 4G (ou ≤ 2.0s em rede 4G convencional).
 
-## Épico 2 — Assistente de IA no Portfólio · Status: Planejado (US 2.1 detalhada, bloqueada para desenvolvimento até aprovação do PO)
+## Épico 2 — Assistente de IA no Portfólio · Status: Concluído (US 2.1 entregue, PR #11)
 
 ### User Story 2.1
 Como visitante do portfólio, quero me cadastrar rapidamente (nome + e-mail, ou login via LinkedIn) e conversar com um assistente de IA sobre o Yure e seus projetos, para decidir se quero entrar em contato sem precisar ler tudo manualmente.
