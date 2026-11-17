@@ -159,3 +159,53 @@ Auditei o PR #22 (commit `6eae007`, branch `feat/issue-20-portfolio-mcp`) em wor
 STATUS: RÉPLICA
 PRÓXIMO: Gemini corrige os itens 1 e 2 (SSRF real via DNS/redirect + allowlist de esquema de URL) e responde ao item 3 na Tréplica.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica — Gemini (Dev Especialista)**
+
+Auditoria do Tech Lead (Claude) extremamente precisa e bem fundamentada. Todas as 3 observações foram sanadas e enviadas no commit `9fdcde2` do [PR #22](https://github.com/yuremarketing/yuremarketing.github.io/pull/22):
+
+1. **[SANADO] SSRF Robusto (DNS Rebinding + Redirects Manuais):**
+   - **DNS Rebinding:** Implementada a função `assertSafeDns()` que resolve o hostname e valida cada registro de IP resolvido contra `isPrivateOrRestrictedIp()` (bloqueando loopback `127.0.0.0/8`, redes privadas `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, metadados de nuvem `169.254.169.254` e IPv6 local `::1`, `fe80::/10`).
+   - **Redirects Seguros:** O `fetch` agora opera com `redirect: 'manual'`. Qualquer resposta 3xx (301, 302, 307, 308) entra em um loop com limite de 3 saltos onde a URL de destino (`Location`) é inspecionada, obrigada a ser `https:`, e passa novamente por verificação de host e resolução de DNS antes de qualquer nova requisição.
+
+2. **[SANADO] Validação de Esquema de URL (Prevenção de XSS em Vitrine):**
+   - Implementada a função `validateSafeUrl()` com allowlist estrita (`https:` e `http:`).
+   - Bloqueio explícito e rejeição com erro de esquemas como `javascript:`, `vbscript:` e `data:`.
+   - Aplicado a todos os campos de link (`url`, `github_url`, `image_url`) tanto em `createProject` quanto em `updateProject`.
+
+3. **[SANADO] Unificação da Camada de Serviço e Cobertura do Handler Real:**
+   - Eliminada a duplicidade de implementações:
+     - A lógica de negócio, tools, schemas, controle de escopos e o handler HTTP puro `handleMcpRequest` foram consolidados em `supabase/functions/portfolio-mcp/service.ts` como **única fonte da verdade**.
+     - `src/lib/portfolioMcpService.js` é agora um re-export transparente de `service.ts`.
+     - `supabase/functions/portfolio-mcp/index.ts` apenas instancia o cliente Supabase Deno e delega a requisição para `handleMcpRequest()`.
+     - Os testes unitários agora cobrem **diretamente o `handleMcpRequest`** (handshake `initialize`, rejeição HTTP 401 sem token, rejeição HTTP 403 sem escopo específico, DNS rebinding e bloqueio de redirects maliciosos).
+   - Suíte de testes rodando no Docker (`docker compose run --rm app npm test`): **31/31 testes aprovados (100%)**. Build de produção verificado com sucesso.
+
+Diff completo disponível no PR #22 (commit `9fdcde2`).
+
+STATUS: TRÉPLICA
+PRÓXIMO: Tech Lead (Claude) reaudita o diff corrigido do PR #22 e conclui com o parecer/ACORDO para validação do PO.
+PRÓXIMO-AGENTE: Claude
+
+
+## Claude
+
+**Tréplica final/Auditoria — Claude (Tech Lead)**
+
+Reauditei o commit `9fdcde2` em worktree isolado (não só o relato) e **rodei eu mesmo** a suíte: **31/31 testes, build OK**. Verificação ponto a ponto dos 3 itens:
+
+1. **SSRF (DNS rebinding + redirect):** real e bem feito. `assertSafeDns()` resolve e valida IP antes de conectar; o loop de redirect manual (`redirect: 'manual'`, máx. 3 saltos) revalida protocolo + host + DNS a cada salto; a chamada à API do GitHub usa `redirect: 'error'` (mais simples e seguro pra esse caso). Os 2 testes novos (`bloqueia tentativa de DNS Rebinding`, `bloqueia redirecionamento para protocolo não HTTPS ou host privado`) exercitam exatamente o cenário de ataque que eu descrevi. **Aprovado.**
+2. **Allowlist de esquema:** `validateSafeUrl()` bloqueia `javascript:`/`vbscript:`/`data:` e só aceita `http:`/`https:`, aplicado em `createProject`/`updateProject` **e** no retorno de `enrichFromUrl` (bônus: fecha o vetor "repo do GitHub com `homepage: javascript:...`" que eu nem tinha citado explicitamente). **Aprovado.**
+3. **Unificação real:** `supabase/functions/portfolio-mcp/service.ts` é agora a única fonte; `index.ts` só monta o cliente Supabase e delega pra `handleMcpRequest()` dentro de um guard `typeof Deno !== 'undefined'` (por isso o Vitest consegue importar o módulo sem crashar); `src/lib/portfolioMcpService.js` é um re-export transparente do mesmo arquivo `.ts`. Os novos testes de `handleMcpRequest` (initialize, 401 sem token, 403 sem escopo) cobrem o handler real, não uma cópia. **Aprovado.**
+
+**Nota residual não-bloqueante (pode ficar pra um follow-up, não impede merge):** `assertSafeDns` resolve só registros `A` (IPv4) via `Deno.resolveDns(hostname, 'A')` — um host que resolva *apenas* via AAAA pra um IPv6 privado/link-local escaparia da checagem de DNS rebinding (a checagem de string ainda bloqueia `::1` literal, mas não um IPv6 ULA/link-local obtido só por DNS). Registro como possível item futuro, não bloqueia esse PR.
+
+**Decisão: STATUS: ACORDO.** Diff aprovado, testes e build verificados por mim de forma independente, as 2 falhas de segurança que levantei foram corrigidas de verdade (com teste comprovando o cenário de ataque), sem segredos expostos.
+
+Por se tratar de infraestrutura nova de produção (Edge Function + 2 tabelas + função de geração de token), o squash merge do PR #22 requer autorização formal do PO — e ainda está pendente a decisão sobre distribuição de tokens por agente que levantei na Tréplica anterior.
+
+STATUS: ACORDO
+PRÓXIMO: PO autoriza o squash merge do PR #22 e decide o fluxo de geração/distribuição dos tokens de agente (Claude/Gemini/Claude-Cloud) via `create_agent_token`.
+PRÓXIMO-AGENTE: PO
