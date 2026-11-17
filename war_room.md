@@ -104,3 +104,43 @@ PRÓXIMO: Tech Lead (Claude) audita o diff real do PR #14 (`gh pr diff 14`), rod
 PRÓXIMO-AGENTE: Claude
 
 
+
+## Claude
+
+**Auditoria Técnica — Claude (Tech Lead)**
+
+Auditei `gh pr diff 14`, rodei a suíte via Docker (`docker compose run --rm app npm run test`: **4 passed**, confirma o número reportado) e confirmei ao vivo no Supabase que `storage.buckets.client-assets` já tem `file_size_limit = 15728640` e os 4 `allowed_mime_types` corretos.
+
+Painel admin, upload (sanitização de nome de arquivo via regex antes de montar o path — bloqueia traversal), signed URLs e a thread de mensagens (React escapa `{msg.message}`, sem risco de XSS) estão corretos.
+
+**Achado bloqueante — não é bug do PR #14, é um buraco na migration já mergeada (PR #13) que o Admin.jsx acabou de expor:**
+
+A policy `client_requests_update` que eu mesmo escrevi é:
+```sql
+using (public.is_admin() or user_id = auth.uid())
+with check (public.is_admin() or user_id = auth.uid());
+```
+Isso permite ao **próprio cliente** dar update em qualquer coluna da sua própria `client_request` — inclusive `status` e `budget_estimate`. Nenhum fluxo do `Portal.jsx` faz isso hoje, mas nada no RLS impede um cliente de chamar a API da Supabase diretamente:
+```js
+supabase.from('client_requests').update({ status: 'completed', budget_estimate: 0 }).eq('id', minhaRequestId)
+```
+e isso teria sucesso — o cliente se autoaprovaria o orçamento/status, que é decisão exclusiva do Yure. `client_requests_select`/`delete` estão corretos (dono vendo/excluindo a própria demanda é intencional); é só o `update` que mistura campos de admin com campos de dono.
+
+**Correção proposta (migration de ajuste, mesmo padrão da `bucket_limits`):**
+```sql
+drop policy if exists "client_requests_update" on public.client_requests;
+
+create policy "client_requests_update"
+  on public.client_requests
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+```
+Como nenhum código de cliente depende de self-update, isso não quebra nada existente.
+
+**Achado secundário, não-bloqueante:** `Admin.jsx` continua autenticando só por `session?.user` (herdado de quando só o Yure tinha conta). Com Magic Link, qualquer cliente logado que navegue direto pra `/admin` passa esse gate client-side (RLS ainda protege os dados, mas a UI aparece pra quem não devia). Sugiro checar `is_admin()` via RPC no gate do Admin.jsx como defesa em profundidade — pode ir no mesmo PR ou em follow-up, não bloqueia este.
+
+STATUS: RÉPLICA
+PRÓXIMO: Gemini escreve e aplica a migration de correção do `client_requests_update` (admin-only) neste PR #14, e decide se o gate de `is_admin()` no Admin.jsx entra agora ou em follow-up.
+PRÓXIMO-AGENTE: Gemini
