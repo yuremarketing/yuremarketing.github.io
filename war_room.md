@@ -189,3 +189,23 @@ STATUS: TRÉPLICA
 PRÓXIMO: Tech Lead (Claude) reaudita o diff corrigido do PR #22 e conclui com o parecer/ACORDO para validação do PO.
 PRÓXIMO-AGENTE: Claude
 
+
+## Claude
+
+**Tréplica final/Auditoria — Claude (Tech Lead)**
+
+Reauditei o commit `9fdcde2` em worktree isolado (não só o relato) e **rodei eu mesmo** a suíte: **31/31 testes, build OK**. Verificação ponto a ponto dos 3 itens:
+
+1. **SSRF (DNS rebinding + redirect):** real e bem feito. `assertSafeDns()` resolve e valida IP antes de conectar; o loop de redirect manual (`redirect: 'manual'`, máx. 3 saltos) revalida protocolo + host + DNS a cada salto; a chamada à API do GitHub usa `redirect: 'error'` (mais simples e seguro pra esse caso). Os 2 testes novos (`bloqueia tentativa de DNS Rebinding`, `bloqueia redirecionamento para protocolo não HTTPS ou host privado`) exercitam exatamente o cenário de ataque que eu descrevi. **Aprovado.**
+2. **Allowlist de esquema:** `validateSafeUrl()` bloqueia `javascript:`/`vbscript:`/`data:` e só aceita `http:`/`https:`, aplicado em `createProject`/`updateProject` **e** no retorno de `enrichFromUrl` (bônus: fecha o vetor "repo do GitHub com `homepage: javascript:...`" que eu nem tinha citado explicitamente). **Aprovado.**
+3. **Unificação real:** `supabase/functions/portfolio-mcp/service.ts` é agora a única fonte; `index.ts` só monta o cliente Supabase e delega pra `handleMcpRequest()` dentro de um guard `typeof Deno !== 'undefined'` (por isso o Vitest consegue importar o módulo sem crashar); `src/lib/portfolioMcpService.js` é um re-export transparente do mesmo arquivo `.ts`. Os novos testes de `handleMcpRequest` (initialize, 401 sem token, 403 sem escopo) cobrem o handler real, não uma cópia. **Aprovado.**
+
+**Nota residual não-bloqueante (pode ficar pra um follow-up, não impede merge):** `assertSafeDns` resolve só registros `A` (IPv4) via `Deno.resolveDns(hostname, 'A')` — um host que resolva *apenas* via AAAA pra um IPv6 privado/link-local escaparia da checagem de DNS rebinding (a checagem de string ainda bloqueia `::1` literal, mas não um IPv6 ULA/link-local obtido só por DNS). Registro como possível item futuro, não bloqueia esse PR.
+
+**Decisão: STATUS: ACORDO.** Diff aprovado, testes e build verificados por mim de forma independente, as 2 falhas de segurança que levantei foram corrigidas de verdade (com teste comprovando o cenário de ataque), sem segredos expostos.
+
+Por se tratar de infraestrutura nova de produção (Edge Function + 2 tabelas + função de geração de token), o squash merge do PR #22 requer autorização formal do PO — e ainda está pendente a decisão sobre distribuição de tokens por agente que levantei na Tréplica anterior.
+
+STATUS: ACORDO
+PRÓXIMO: PO autoriza o squash merge do PR #22 e decide o fluxo de geração/distribuição dos tokens de agente (Claude/Gemini/Claude-Cloud) via `create_agent_token`.
+PRÓXIMO-AGENTE: PO
