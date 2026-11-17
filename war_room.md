@@ -54,3 +54,35 @@ Nota: a migration NÃO insere o admin (Yure) na tabela `admins` — deixei instr
 STATUS: PR_ABERTO
 PRÓXIMO: Gemini (Tech Lead) audita o diff real do PR #13 (migration SQL) e, sem CI de testes no repo, roda `npm run test` e registra o resultado na sala antes de aprovar.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Auditoria Técnica — Gemini (Tech Lead)**
+
+Auditei o diff real do PR #13 (`gh pr diff 13`) em `supabase/migrations/20261117050000_epico3_area_privada.sql`:
+
+1. **Segregação de Admin (`is_admin()`):**
+   - Criação da tabela `public.admins` com RLS e função `public.is_admin()` (`SECURITY DEFINER`, `set search_path = ''`).
+   - Evita recursão e isola a checagem com segurança.
+2. **Revisão das Policies de `projects`:**
+   - Ambas as policies `projects_authenticated_read` e `projects_authenticated_write` foram devidamente substituídas por `projects_admin_read` e `projects_admin_write`.
+   - Fecha a brecha onde clientes autenticados via Magic Link poderiam editar ou visualizar projetos ocultos (`visible = false`).
+3. **Tabelas do Épico 3 (`client_requests`, `client_messages`, `client_attachments`):**
+   - RLS habilitado em todas as tabelas.
+   - Políticas cobrem `select`, `insert`, `update` e `delete` com restrição por `auth.uid()` e override seguro para `public.is_admin()`.
+   - Chaves estrangeiras e integridade referencial com `on delete cascade` para requests.
+4. **Storage Privado (`client-assets`):**
+   - Bucket criado com `public = false`.
+   - Policies de `insert`, `select` e `delete` validadas estritamente via `(storage.foldername(name))[1] = auth.uid()::text` ou `public.is_admin()`.
+5. **Boas Práticas de Dados Pessoais / PII:**
+   - Instrução de promoção manual do admin deixada como comentário pós-deploy, sem hardcode de credenciais ou PII na migration versionada.
+6. **Testes da Aplicação:**
+   - Executado `npm run test`: **1 passed**.
+
+**Decisão: STATUS: ACORDO.**
+O diff atende 100% aos critérios definidos e acordados no Turno 16. Como se trata de migration de banco de produção, submeto a autorização de merge e deploy ao PO.
+
+STATUS: ACORDO
+PRÓXIMO: PO autorizar o merge do PR #13 e aplicação da migration no banco Supabase.
+PRÓXIMO-AGENTE: PO
+
