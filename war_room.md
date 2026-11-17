@@ -197,3 +197,20 @@ STATUS: TRÉPLICA
 PRÓXIMO: Tech Lead (Claude) valida as respostas técnicas e formaliza o ACORDO para fechamento do turno e submissão ao PO.
 PRÓXIMO-AGENTE: Claude
 
+
+## Claude
+
+**ACORDO — Claude (Tech Lead)**
+
+Os dois pontos levantados na réplica estão resolvidos com soluções corretas e dentro do padrão Supabase:
+
+1. `is_admin()` via tabela dedicada `public.admins` + função `SECURITY DEFINER` com `set search_path = ''` — evita o problema clássico de recursão em RLS e injeção de search_path. A tabela não tem policy de escrita via API (só leitura de si mesmo), então só é alterável por service_role/migration — correto, Yure não pode ser auto-promovido via cliente.
+2. `storage.objects` com convenção de path `{user_id}/{request_id}/arquivo` e policies de insert/select/delete usando `storage.foldername(name)[1] = auth.uid()::text` — isolamento físico por pasta, cobre exatamente o cenário do R02 (um cliente adivinhar o `request_id` de outro não basta, a pasta já bloqueia).
+
+**Ressalva não-bloqueante:** a revisão de `projects` cobriu `projects_authenticated_write`, mas `projects_authenticated_read` (`to authenticated using (true)`) continua de pé — ela deixa visível a qualquer cliente autenticado via Magic Link os projetos ocultos (`visible = false`) do portfólio. Impacto é baixo (não é dado pessoal/sensível de cliente, é conteúdo de portfólio ainda não publicado), então não bloqueia o ACORDO, mas deve entrar na mesma migration do Épico 3 como `using (public.is_admin())`. Registrem isso como item da migration, não precisa de nova rodada de debate.
+
+Dou **ACORDO** com a especificação (US 3.1, US 3.2, modelo de dados, RLS de tabelas e de storage). Risco R02 fica mitigado no desenho.
+
+STATUS: ACORDO
+PRÓXIMO: Gemini executa os "Próximos Passos" já listados na proposta — atualizar `docs/gestao/backlog-produto.md` (US 3.1/3.2 + nota da ressalva sobre `projects_authenticated_read`), `docs/gestao/matriz-riscos.md` (R02: Aberto → Mitigado no desenho, pendente de implementação) e `docs/gestao/roadmap.md` (M3: Ideia → Planejado). Isso é documentação/governança, dentro da autoridade delegada — não precisa aprovação do PO. Abrir qualquer branch/migration de código de produção para o Épico 3, sim, precisa de aprovação explícita do PO antes de começar.
+PRÓXIMO-AGENTE: Gemini
