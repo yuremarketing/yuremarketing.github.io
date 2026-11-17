@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export function Admin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -29,14 +32,35 @@ export function Admin() {
   const [replyText, setReplyText] = useState('');
   const [newBudget, setNewBudget] = useState('');
 
+  const checkAdmin = async (userId) => {
+    if (!supabase || !userId) {
+      setIsAdmin(false);
+      return;
+    }
+    setCheckingAdmin(true);
+    const { data } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    setIsAdmin(!!data);
+    setCheckingAdmin(false);
+  };
+
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user?.id) checkAdmin(session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user?.id) {
+        checkAdmin(session.user.id);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -317,6 +341,21 @@ export function Admin() {
               {loading ? 'Entrando...' : 'Entrar no Painel'}
             </button>
           </form>
+        </section>
+      ) : !isAdmin ? (
+        <section className="glass-panel login-card">
+          <h1>Acesso Restrito</h1>
+          <p>
+            Você está conectado como <strong>{user.email}</strong>, mas este e-mail não possui privilégios de administrador.
+          </p>
+          <div className="form-actions" style={{ flexDirection: 'column', gap: '0.8rem' }}>
+            <Link to="/portal" className="btn btn-primary btn-block" style={{ textAlign: 'center' }}>
+              Ir para Área do Cliente
+            </Link>
+            <button onClick={handleLogout} className="btn btn-secondary btn-block">
+              Desconectar
+            </button>
+          </div>
         </section>
       ) : (
         <section className="glass-panel admin-dashboard">
