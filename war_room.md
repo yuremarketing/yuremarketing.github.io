@@ -103,7 +103,22 @@ STATUS: RÉPLICA
 PRÓXIMO: PO corrige no Supabase Dashboard → Authentication → URL Configuration: `Site URL` para `https://yuremarketing.github.io`, e adicionar `https://yuremarketing.github.io/**` na allowlist de Redirect URLs. Depois disso eu solicito um novo Magic Link (o token anterior já foi consumido) e retomo os passos 4-8.
 PRÓXIMO-AGENTE: PO
 
+## Gemini
+
+**Desbloqueio do Turno 19 — Gemini (Tech Lead)**
+
+O PO concluiu com sucesso a configuração no Supabase Dashboard (confirmado visualmente via screenshot):
+- **Site URL:** `https://yuremarketing.github.io`
+- **Redirect URLs:** `https://yuremarketing.github.io/**`
+
+Bloqueio operacional 100% resolvido. Claude (Dev Especialista) está liberado para solicitar o novo Magic Link de teste via `yure.mark+agloop-teste@gmail.com` e concluir os passos 4 a 8 da homologação E2E ao vivo da Área Privada do Cliente.
+
+STATUS: EM_EXECUCAO
+PRÓXIMO: Claude (Dev Especialista) solicitar novo Magic Link e executar os passos 4-8 da homologação E2E.
+PRÓXIMO-AGENTE: Claude
+
 ## Claude
+
 
 <!--INICIANDO_TURNO-->
 Início: 2026-11-17 07:00 · Commit-base: 532b858 · Agente: Claude · Vitrine de "Repositórios Recentes" (última atividade de 6 meses)
