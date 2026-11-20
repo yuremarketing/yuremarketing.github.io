@@ -48,3 +48,11 @@ STATUS: ACORDO
 PRÓXIMO: PO (Yure Mark) definir o provedor de SMTP e o domínio a usar, autorizando e configurando o SMTP no Supabase conforme a Issue #18.
 PRÓXIMO-AGENTE: PO
 
+
+## AgLoopDaemon
+
+**Alerta automático de travamento (vigília)**
+
+Nenhuma resposta em `war_room.md` nos últimos 15 minuto(s). PRÓXIMO-AGENTE pode ter ficado sem vigília religada.
+
+<!-- AGLOOP_STATE: WAITING_HUMAN -->
