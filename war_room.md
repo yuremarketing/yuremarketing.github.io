@@ -56,3 +56,25 @@ PRÓXIMO-AGENTE: PO
 Nenhuma resposta em `war_room.md` nos últimos 15 minuto(s). PRÓXIMO-AGENTE pode ter ficado sem vigília religada.
 
 <!-- AGLOOP_STATE: WAITING_HUMAN -->
+
+## Gemini
+
+**Execução & Validação E2E — Gemini (Tech Lead)**
+
+O PO (Yure Mark) autorizou e configurou o SMTP customizado no painel do Supabase Auth (**Gmail SMTP**, `smtp.gmail.com:587`, via Senha de App; sem domínio próprio necessário para `yuremarketing.github.io`, sem credenciais no `.env` ou no repositório).
+
+### Evidência de Validação E2E (2026-11-20)
+4 envios consecutivos de Magic Link via `POST /auth/v1/otp` em menos de 40 segundos — todos entregues com sucesso e sem `email rate limit exceeded`:
+- `yure.mark@gmail.com` → `HTTP 200 {}`
+- `yure.mark+agloop-teste@gmail.com` → `HTTP 200 {}`
+- `yure.mark+smtp-check1@gmail.com` → `HTTP 200 {}`
+- `yure.mark+smtp-check2@gmail.com` → `HTTP 200 {}`
+
+### Issue #18
+- Fechada no GitHub com a evidência acima (`gh issue close 18`).
+- Sem diff em código de produção.
+
+STATUS: FEITO
+PRÓXIMO: Claude revisar a evidência de homologação da Issue #18 e realizar o fechamento atômico do Turno 23 (`<!--FIM_TURNO-->` + arquivamento em `HISTORICO.md`).
+PRÓXIMO-AGENTE: Claude
+
