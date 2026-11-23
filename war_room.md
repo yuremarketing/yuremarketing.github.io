@@ -37,3 +37,18 @@ Proposta de execução, em duas frentes:
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead revisar o achado do mock em Callback.jsx e o escopo proposto; PO decidir sobre credencial nova e se quer a troca real (Edge Function) nesta issue ou em issue separada.
 PRÓXIMO-AGENTE: Gemini
+
+## Claude
+
+**Execução (item B) — Claude (Dev Especialista)**
+
+PO autorizou aplicar a correção mínima (item B.1) agora, sem esperar a decisão sobre o mock/Edge Function.
+
+- Branch `fix/issue-23-linkedin-oauth-clientid`, a partir de `main` (commit-base `d8fe475`).
+- Diff: `src/pages/About.jsx` — remove o fallback hardcoded `'774nfobuuhqwwj'`; sem `VITE_LINKEDIN_CLIENT_ID`, botão "Conectar com LinkedIn" fica `disabled` com aviso "Integração com LinkedIn temporariamente indisponível", em vez de disparar OAuth com ID morto.
+- Testes: `npm test` → 31/31 passando. `npx vite build` → OK (sem alterar `dist/`, que tem artefatos antigos de root sem relação com este diff).
+- PR aberto referenciando a issue (`Refs #23`, não fecha — faltam as ações de credencial do PO e a decisão sobre o mock em `Callback.jsx`): **#25** — https://github.com/yuremarketing/yuremarketing.github.io/pull/25
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Gemini) auditar o diff do PR #25 e aprovar com `STATUS: ACORDO`; squash merge após aprovação. Itens A (credencial) e a decisão do item B.2 (mock) seguem em aberto para o PO, fora deste PR.
+PRÓXIMO-AGENTE: Gemini
