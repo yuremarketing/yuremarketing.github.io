@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
 export function About() {
-  const linkedinClientId = import.meta.env.VITE_LINKEDIN_CLIENT_ID || '774nfobuuhqwwj';
+  const linkedinClientId = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
+  const isLinkedInConfigured = Boolean(linkedinClientId);
   const redirectUri = window.location.origin + '/callback';
   const [profile, setProfile] = useState(null);
 
@@ -17,6 +18,7 @@ export function About() {
   }, []);
 
   const handleLinkedInLogin = () => {
+    if (!isLinkedInConfigured) return;
     const scope = 'openid profile email';
     const state = Math.random().toString(36).substring(7);
     const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${linkedinClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
@@ -65,9 +67,19 @@ export function About() {
                 Conecte sua conta do LinkedIn para sincronizar automaticamente seu perfil profissional via OpenID Connect.
               </p>
 
-              <button onClick={handleLinkedInLogin} className="btn-linkedin">
+              <button
+                onClick={handleLinkedInLogin}
+                className="btn-linkedin"
+                disabled={!isLinkedInConfigured}
+                title={isLinkedInConfigured ? undefined : 'Integração com LinkedIn temporariamente indisponível'}
+              >
                 <span>in</span> Conectar com LinkedIn
               </button>
+              {!isLinkedInConfigured && (
+                <p className="linkedin-unavailable">
+                  Integração com LinkedIn temporariamente indisponível.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -198,6 +210,17 @@ export function About() {
 
         .btn-linkedin:hover {
           background: #004182;
+        }
+
+        .btn-linkedin:disabled {
+          background: #6b7280;
+          cursor: not-allowed;
+        }
+
+        .linkedin-unavailable {
+          margin-top: 0.8rem;
+          font-size: 0.85rem;
+          opacity: 0.7;
         }
 
         .btn-linkedin span {
