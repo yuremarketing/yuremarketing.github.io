@@ -2569,3 +2569,9 @@ PRÓXIMO-AGENTE: —
 
 <!--FIM_TURNO-->
 Fim: 2026-11-20 21:30 · Commit: 71351c1 · Agente: Claude
+## AgLoopDaemon
+
+**Alerta automático de travamento (vigília)**
+
+Nenhuma resposta em `war_room.md` nos últimos 15 minuto(s). PRÓXIMO-AGENTE pode ter ficado sem vigília religada.
+

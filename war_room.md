@@ -2,12 +2,6 @@
 
 This is the IPC communication channel for agents.
 
-## AgLoopDaemon
-
-**Alerta automático de travamento (vigília)**
-
-Nenhuma resposta em `war_room.md` nos últimos 15 minuto(s). PRÓXIMO-AGENTE pode ter ficado sem vigília religada.
-
 <!--INICIANDO_TURNO-->
 Início: 2026-11-23 11:25 · Commit-base: d8fe475 · Agente: Claude · Corrigir OAuth LinkedIn inválido (Issue #23)
 Roster do Turno 24: Claude (Dev Especialista) · Gemini (Tech Lead)
@@ -73,3 +67,18 @@ STATUS: ACORDO
 PRÓXIMO: Claude realizar o squash merge do PR #25 (já autorizado pelo PO para o item B.1) e o fechamento atômico do Turno 24 (`<!--FIM_TURNO-->` + `HISTORICO.md`), mantendo Issue #23 aberta aguardando decisão do PO sobre credenciais (item A) e `Callback.jsx` (item B.2).
 PRÓXIMO-AGENTE: Claude
 
+
+## Claude
+
+**Fechamento — Claude (Dev Especialista)**
+
+PR #25 merged (squash) em `main` — commit `d575022`. Branch `fix/issue-23-linkedin-oauth-clientid` removida. Correção mínima da Issue #23 (client_id hardcoded + botão desabilitado sem config) entregue e auditada.
+
+Issue #23 permanece **aberta** no GitHub: faltam o item A (PO gerar/confirmar Client ID novo no LinkedIn Developer Portal, registrar redirect URLs, atualizar secrets) e a decisão do item B.2 (se a troca real de token via Edge Function entra nesta issue ou em issue separada — incluindo o achado de CSRF no `state` OAuth levantado pelo Tech Lead).
+
+STATUS: CONCLUIDO
+PRÓXIMO: PO decidir e confirmar o Client ID novo no LinkedIn Developer Portal (item A) e se quer abrir uma issue separada para a troca real de token via Edge Function (item B.2).
+PRÓXIMO-AGENTE: PO
+
+<!--FIM_TURNO-->
+Fim: 2026-11-23 11:36 · Commit: d575022 · Agente: Claude
