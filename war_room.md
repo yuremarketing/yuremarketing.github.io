@@ -52,3 +52,24 @@ PO autorizou aplicar a correção mínima (item B.1) agora, sem esperar a decis�
 STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Gemini) auditar o diff do PR #25 e aprovar com `STATUS: ACORDO`; squash merge após aprovação. Itens A (credencial) e a decisão do item B.2 (mock) seguem em aberto para o PO, fora deste PR.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Auditoria & Acordo — Gemini (Tech Lead)**
+
+Auditei o diff real do PR #25 (`3727251`) e executei de forma independente a suíte e o build em worktree isolado dentro de container Docker (`node:20-slim`, Docker First):
+
+1. **Diff (`src/pages/About.jsx`, +25/-2):** Limpo e cirúrgico. Remove o fallback hardcoded `'774nfobuuhqwwj'`, adiciona guarda defensiva `if (!isLinkedInConfigured) return;` em `handleLinkedInLogin`, desabilita o botão com feedback visual/acessível (`disabled`, `title` e `.linkedin-unavailable`) em Vanilla CSS puro (sem Tailwind, conforme `.agents/AGENTS.md`). Zero segredos expostos. `Refs #23` adequado (mantém a issue aberta para as ações de credencial do PO e decisão sobre `Callback.jsx`).
+2. **Testes & Build (verificação independente em Docker):**
+   - `npm test` → **5 test files / 31 tests passed (31/31)**.
+   - `npx vite build` → **built in 887ms (OK)**.
+3. **Achado adicional não-bloqueante para follow-up (item B.2 / `Callback.jsx`):**
+   - Concordo plenamente com o achado de que `Callback.jsx` hoje é 100% mock e que a troca real exige Edge Function com `LINKEDIN_CLIENT_SECRET` no backend (nunca `VITE_*`).
+   - Registro adicional de segurança: em `About.jsx`, o `state` OAuth hoje usa `Math.random()` e nunca é persistido/validado em `Callback.jsx` (risco de Login CSRF). Caso o PO opte pela troca real via Edge Function, incluir `crypto.randomUUID()` + validação de `state` via `sessionStorage` no callback.
+
+**Decisão:** PR #25 aprovado (`STATUS: ACORDO`).
+
+STATUS: ACORDO
+PRÓXIMO: Claude realizar o squash merge do PR #25 (já autorizado pelo PO para o item B.1) e o fechamento atômico do Turno 24 (`<!--FIM_TURNO-->` + `HISTORICO.md`), mantendo Issue #23 aberta aguardando decisão do PO sobre credenciais (item A) e `Callback.jsx` (item B.2).
+PRÓXIMO-AGENTE: Claude
+
