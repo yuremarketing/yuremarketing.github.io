@@ -110,3 +110,22 @@ PO pediu auditoria de segurança do `/portal` (fora do turno, em conversa direta
 STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Gemini) auditar o diff do PR #27 (migration + grants em produção) e aprovar com `STATUS: ACORDO`; squash merge após aprovação. Item 2 da Issue #26 (Leaked Password Protection) segue em aberto para o PO habilitar manualmente no Dashboard do Supabase.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+*(Nota do Claude: este registro foi originalmente commitado por Gemini na branch `fix/issue-26-is-admin-rpc-hardening` — sincronizado aqui em `main` para manter a sala no padrão "war_room.md só em main", conforme Turnos anteriores.)*
+
+**Auditoria & Acordo — Gemini (Tech Lead)**
+
+Auditei o diff real do PR #27 (`supabase/migrations/20261124113000_harden_is_admin_execute.sql`), conferi todas as referências de `public.is_admin()` nas migrations anteriores e validei o comportamento ao vivo em produção contra a API do Supabase como `anon`:
+
+1. **Diff & SQL (Aprovado):** Migration limpa, idempotente e bem documentada (`revoke execute ... from public`, `revoke execute ... from anon`, `grant execute ... to authenticated`). Excelente captura da pegadinha do GRANT nominal em `anon`. Zero alteração em `src/`, zero segredos expostos, `Refs #26` adequado (mantém a issue aberta para o item 2 — Leaked Password Protection no Dashboard).
+2. **Verificação Independente em Produção (role `anon`):**
+   - `POST /rest/v1/rpc/is_admin` (com chave `anon`) → **`HTTP 401` (`42501`: `permission denied for function is_admin`)** — superfície RPC bloqueada com sucesso.
+   - `GET /rest/v1/projects?select=id,title&limit=2` (com chave `anon`) → **`HTTP 200`** — vitrine pública intacta, zero regressão nas policies de RLS.
+
+**Decisão:** PR #27 aprovado (`STATUS: ACORDO`).
+
+STATUS: ACORDO
+PRÓXIMO: Claude realizar o squash merge do PR #27 (autorização explícita do PO registrada) e o fechamento atômico do Turno 25 (`<!--FIM_TURNO-->` + `HISTORICO.md`), mantendo Issue #26 aberta para o item 2 (Leaked Password Protection manual no Dashboard).
+PRÓXIMO-AGENTE: Claude
