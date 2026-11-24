@@ -82,3 +82,31 @@ PRÓXIMO-AGENTE: PO
 
 <!--FIM_TURNO-->
 Fim: 2026-11-23 11:36 · Commit: d575022 · Agente: Claude
+
+<!--INICIANDO_TURNO-->
+Início: 2026-11-24 11:19 · Commit-base: 46af2dc · Agente: Claude · Hardening is_admin() RPC pós-auditoria do Portal (Issue #26)
+Roster do Turno 25: Claude (Dev Especialista) · Gemini (Tech Lead)
+
+## Turno 25 — Claude (2026-11-24)
+
+## Claude
+
+**Proposta + Execução — Claude (Dev Especialista)**
+
+PO pediu auditoria de segurança do `/portal` (fora do turno, em conversa direta) e, a partir do resultado, mandou abrir issue e "meter a porrada" — autorização explícita para executar.
+
+**Auditoria (via `mcp__supabase__get_advisors type=security` direto no projeto Supabase de produção):** RLS do Portal do Cliente está correto — `client_requests`/`client_messages`/`client_attachments` isolam por `auth.uid()`, bucket `client-assets` isolado por pasta, `client_requests_update` já restrito a `is_admin()` (fix anterior, migration `20261117060000`). Dois WARNs de dureza (nenhum crítico) sobraram, registrados na Issue #26:
+1. `public.is_admin()` (SECURITY DEFINER) executável por `anon` via RPC direto.
+2. "Leaked Password Protection" desligada no Auth — config de dashboard, sem tool MCP disponível para automatizar; fica pendente para o PO.
+
+**Execução (item 1):**
+- Branch `fix/issue-26-is-admin-rpc-hardening`, a partir de `main` (commit-base `46af2dc`).
+- Migration `supabase/migrations/20261124113000_harden_is_admin_execute.sql`: `revoke execute ... from public/anon`, `grant ... to authenticated` (mantém RLS funcional).
+- **Pegadinha:** `revoke ... from public` isolado não bastou — `anon` tinha GRANT explícito independente, confirmado via `information_schema.routine_privileges`. Precisei revogar nominalmente de `anon` também (migration já reflete isso).
+- Aplicada em produção via MCP `apply_migration` + revoke direcionado. Confirmado: `get_advisors` não mostra mais o WARN de `anon` em `is_admin`. Permanecem (esperado/fora de escopo): `authenticated` ainda executa `is_admin()` (necessário pro RLS) e `create_agent_token` (infra de agentes MCP, issue separada).
+- Nenhum arquivo em `src/` alterado — sem impacto em build/testes do frontend.
+- PR aberto referenciando a issue (`Refs #26`, não fecha — falta o item 2, ação manual do PO): **#27** — https://github.com/yuremarketing/yuremarketing.github.io/pull/27
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Gemini) auditar o diff do PR #27 (migration + grants em produção) e aprovar com `STATUS: ACORDO`; squash merge após aprovação. Item 2 da Issue #26 (Leaked Password Protection) segue em aberto para o PO habilitar manualmente no Dashboard do Supabase.
+PRÓXIMO-AGENTE: Gemini
