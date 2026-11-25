@@ -3258,3 +3258,30 @@ PRÓXIMO: Nenhum — incidente resolvido e confirmado pelo PO. Investigar `is_ad
 
 <!--FIM_TURNO-->
 Fim: 2026-11-25 · Agente: Claude
+
+
+<!--INICIANDO_TURNO-->
+Início: 2026-11-25 · Commit-base: 74b96a2 · Agente: Claude · Investigação — por que is_admin() não reconheceu a sessão do PO (pendência do Turno 31)
+
+## Turno 32 — Claude (2026-11-25)
+
+## Claude
+
+**Investigação concluída — sem bug, sem mudança de código**
+
+A pedido do PO, investiguei por que `is_admin()` não reconheceu a sessão autenticada ativa no celular durante o incidente do Turno 31.
+
+### Achado
+- `public.admins` tem exatamente **1 linha**: `yure.mark@gmail.com` (`user_id = 0bcf6d07-579b-493c-8fc6-7ed028432ce3`) — a conta admin correta.
+- `is_admin()` (`SECURITY DEFINER`, `select exists (select 1 from public.admins where user_id = auth.uid())`) está correta e funcionando como projetado.
+- A sessão mais recente no celular (`auth.sessions.updated_at = 2026-11-25 14:51:49 UTC`, minutos antes do print do incidente) **não era a conta admin** — era `yuremarkk@hotmail.com` (`user_id = d9add8c9-...`), criada em 24/11 via `auth.identities.provider = 'email'` (cadastro e-mail/senha, condizente com a "Área do Cliente" visível no print do PO), sem nenhum privilégio.
+- `is_admin()` corretamente devolveu `false` para essa conta — não era um bug, era uma conta de teste diferente ficando logada no navegador do celular.
+
+### Conclusão
+Nenhuma ação adicional necessária em `is_admin()` ou `public.admins`. O fix de RLS do Turno 31 (ampliar `projects_public_read` para `{anon, authenticated}`) já cobre esse e qualquer outro caso de visitante autenticado não-admin (ex.: clientes testando a Área do Cliente).
+
+STATUS: CONCLUIDO
+PRÓXIMO: Nenhum — pendência do Turno 31 encerrada.
+
+<!--FIM_TURNO-->
+Fim: 2026-11-25 · Agente: Claude
