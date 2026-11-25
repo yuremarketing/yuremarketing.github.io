@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './hooks/useTheme';
 import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import { Dashboard } from './pages/Dashboard';
 
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
@@ -16,6 +17,9 @@ export function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
+        <a href="#main-content" className="skip-link visually-hidden">
+          Pular para o conteúdo principal
+        </a>
         <Navbar />
         <Suspense fallback={null}>
           <Routes>
@@ -27,6 +31,7 @@ export function App() {
           </Routes>
           <AssistantWidget />
         </Suspense>
+        <Footer />
       </BrowserRouter>
     </ThemeProvider>
   );

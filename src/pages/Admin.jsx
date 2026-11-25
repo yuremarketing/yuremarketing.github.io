@@ -304,7 +304,7 @@ export function Admin() {
   };
 
   return (
-    <main className="admin-page container animate-fade-in">
+    <main id="main-content" tabIndex={-1} className="admin-page container animate-fade-in">
       {!user ? (
         <section className="glass-panel login-card">
           <h1>Painel Administrativo</h1>

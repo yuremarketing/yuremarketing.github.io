@@ -31,7 +31,7 @@ export function About() {
   };
 
   return (
-    <main className="about-page container animate-fade-in">
+    <main id="main-content" tabIndex={-1} className="about-page container animate-fade-in">
       <section className="glass-panel about-card">
         {profile ? (
           <div className="profile-container">

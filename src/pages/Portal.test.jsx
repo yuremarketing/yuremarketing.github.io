@@ -89,4 +89,37 @@ describe('Portal Component (Área Privada do Cliente)', () => {
     expect(screen.getByText(/cliente@empresa.com/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /\+ Nova Solicitação/i })).toBeInTheDocument();
   });
+
+  it('exibe alerta inline acessível sem window.alert ao selecionar arquivo inválido ou acima de 15MB', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    supabase.auth.getSession.mockResolvedValue({
+      data: {
+        session: {
+          user: { id: 'user-123', email: 'cliente@empresa.com' },
+        },
+      },
+    });
+
+    render(<Portal />);
+
+    const newReqBtn = await screen.findByRole('button', { name: /\+ Nova Solicitação/i });
+    fireEvent.click(newReqBtn);
+
+    const fileInput = screen.getByLabelText(/Anexar Briefing ou Imagem de Referência/i);
+
+    const badExtFile = new File(['conteudo'], 'malware.exe', { type: 'application/octet-stream' });
+    fireEvent.change(fileInput, { target: { files: [badExtFile] } });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Extensão não permitida/i);
+    expect(alertSpy).not.toHaveBeenCalled();
+
+    const hugeFile = new File(['a'], 'grande.pdf', { type: 'application/pdf' });
+    Object.defineProperty(hugeFile, 'size', { value: 16 * 1024 * 1024 });
+    fireEvent.change(fileInput, { target: { files: [hugeFile] } });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/ultrapassa o limite máximo de 15MB/i);
+    expect(alertSpy).not.toHaveBeenCalled();
+
+    alertSpy.mockRestore();
+  });
 });
