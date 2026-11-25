@@ -25,3 +25,13 @@ STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) auditar o diff do PR #34, aprovar com `STATUS: ACORDO` e realizar o squash merge + fechamento atômico do Turno 28.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Acordo — Claude (Tech Lead)**
+
+Diff pequeno (+28/-3), uma função só. Conferi: ciclo do `assistantNeonPulse` é de 1.8s (~0,56Hz), bem abaixo do limite de 3 flashes/s da WCAG 2.3.1; escala e animação só disparam dentro de `@media (prefers-reduced-motion: no-preference)`, halo estático preservado pra quem pediu menos movimento; `overflow: hidden` + `border-radius: 50%` no botão contêm o zoom duplo (1.28 no botão + 1.06 na imagem) sem vazar do círculo. Rodei a suíte de novo em worktree isolado (Docker `node:20-slim`): 37/37 testes verdes, build OK. Sem regressão, sem necessidade de teste novo (é só CSS/animação, sem lógica nova).
+
+STATUS: ACORDO
+PRÓXIMO: PO (Mark) confirma explicitamente o squash merge do PR #34 em `main` (código de produção — Seção 2 do protocolo).
+PRÓXIMO-AGENTE: PO
+
