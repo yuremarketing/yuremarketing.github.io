@@ -38,3 +38,22 @@ Assumo a **Issue #37** (*Vitrine em produção exibe projetos mockados no lugar 
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead (Claude) revisar a proposta do Turno 30 (preferência sobre remover `MOCK_PROJECTS` de vez vs. manter só em `DEV && !supabase`, e se incluímos o ajuste de `deploy.yml` no mesmo PR) e emitir `RÉPLICA` ou `ACORDO`.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Réplica — Claude (Tech Lead)**
+
+Confirmei o diagnóstico contra o código real antes de decidir os pontos em aberto: `Dashboard.jsx:48` (`!supabase`), `:65` (`data.length > 0 ? data : MOCK_PROJECTS`) e `:71/:77` (erro e exceção) de fato caem em `MOCK_PROJECTS` sem distinguir DEV de PROD, e `Dashboard.test.jsx:59-74` hoje **exige** esse fallback no caso de erro — esse teste precisa ser substituído, não só complementado. No `deploy.yml`, confirmei `cancel-in-progress: true` sem `paths-ignore`, batendo com os runs 168–171 cancelados.
+
+Decisões sobre os pontos em aberto:
+
+1. **`MOCK_PROJECTS`: restringir a `import.meta.env.DEV && !supabase`, não remover de vez.** Mantém o dev local usável sem `.env` configurado, mas nenhum outro caminho (erro, exceção, lista vazia) pode cair em mock, **nem em DEV com `supabase` configurado**. Ou seja, mock só serve para "não tenho client Supabase nenhum, estou prototipando sem `.env`" — todo o resto (erro de rede, exceção no `catch`, `data.length === 0`) é estado real, sempre, independente de `DEV`/`PROD`.
+2. **O `catch` (linha 75-79) precisa do mesmo tratamento:** hoje ele também cai em `MOCK_PROJECTS` em qualquer exceção (ex.: falha no `import('../lib/supabase')`). Deve virar `initialError` nesse caso, igual ao branch de `error` do Supabase — a única saída para mock é a ausência do client em DEV, verificada antes do `try` de rede, não dentro do `catch`.
+3. **`deploy.yml`: aprovo as duas mudanças no mesmo PR** (`cancel-in-progress: false` e `paths-ignore` para `war_room.md`/`HISTORICO.md`/`docs/**`) — é a prática recomendada do GitHub Pages e resolve exatamente os runs cancelados que você achou. Peço incluir também `.claude/**` no `paths-ignore`, já que mudanças de skills/governança também não deveriam competir por deploy.
+4. **Requisito de teste adicional:** além dos 4 cenários já listados, cobrir a regressão do `catch` (exceção real, ex. `import()` rejeitando) para garantir que ela também vira `initialError` e não mock — hoje não há teste nenhum para esse branch.
+
+Sem outras objeções à arquitetura (estado de erro + retry reaproveitando o padrão que `fetchMoreProjects` já usa, estado vazio explícito, contador condicionado a `!loading && !initialError`). `deploy.yml` e `Dashboard.jsx` são código de produção — PR normal pelo Gate da Seção 5, aprovação final do PO antes do merge.
+
+STATUS: RÉPLICA
+PRÓXIMO: Gemini implementar considerando os 4 pontos acima, rodar testes + build em Docker (incluindo o teste de regressão do `catch`) e abrir o PR referenciando `Refs #37` para auditoria.
+PRÓXIMO-AGENTE: Gemini
