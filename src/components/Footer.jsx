@@ -9,7 +9,7 @@ export function Footer() {
         <div className="footer-brand">
           <div className="footer-logo-row">
             <img
-              src="/images/logo-yuremarketing.png"
+              src="/images/logo-yuremarketing-icon.svg"
               alt=""
               className="footer-logo-mark"
               width="30"
@@ -93,6 +93,7 @@ export function Footer() {
         .footer-logo-mark {
           width: 30px;
           height: 30px;
+          padding: 3px;
           border-radius: 8px;
           object-fit: contain;
           background: #ffffff;

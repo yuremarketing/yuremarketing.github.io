@@ -10,7 +10,7 @@ export function Navbar() {
       <div className="container navbar-container">
         <Link to="/" className="navbar-logo">
           <img
-            src="/images/logo-yuremarketing.png"
+            src="/images/logo-yuremarketing-icon.svg"
             alt=""
             className="logo-mark"
             width="36"
@@ -76,6 +76,7 @@ export function Navbar() {
         .logo-mark {
           width: 36px;
           height: 36px;
+          padding: 4px;
           border-radius: 10px;
           object-fit: contain;
           background: #ffffff;

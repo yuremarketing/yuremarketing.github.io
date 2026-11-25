@@ -23,7 +23,7 @@ describe('Navbar, Footer & Identidade Visual (Issues #28 / Turno 27)', () => {
     expect(screen.queryByRole('link', { name: /Admin/i })).not.toBeInTheDocument();
 
     const logoImg = container.querySelector('img.logo-mark');
-    expect(logoImg).toHaveAttribute('src', '/images/logo-yuremarketing.png');
+    expect(logoImg).toHaveAttribute('src', '/images/logo-yuremarketing-icon.svg');
 
     const aboutLink = screen.getByRole('link', { name: /Sobre Mim/i });
     expect(aboutLink).toHaveAttribute('aria-current', 'page');
@@ -36,7 +36,7 @@ describe('Navbar, Footer & Identidade Visual (Issues #28 / Turno 27)', () => {
     const { container } = render(<Footer />);
 
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
-    expect(container.querySelector('img.footer-logo-mark')).toHaveAttribute('src', '/images/logo-yuremarketing.png');
+    expect(container.querySelector('img.footer-logo-mark')).toHaveAttribute('src', '/images/logo-yuremarketing-icon.svg');
 
     const whatsappLink = screen.getByRole('link', { name: /WhatsApp/i });
     expect(whatsappLink).toHaveAttribute('href', 'https://wa.me/5561994085093');
