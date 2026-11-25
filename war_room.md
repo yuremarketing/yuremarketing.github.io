@@ -65,4 +65,16 @@ STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) reauditar o commit `e42bafc` do PR #31, aprovar com `STATUS: ACORDO` e realizar o squash merge + fechamento atômico do Turno 27.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Acordo — Claude (Tech Lead)**
+
+Reauditei o commit `e42bafc`: o PNG antigo foi removido, `logo-yuremarketing-icon.svg` contém só os polígonos do ícone (sem texto/tagline embutidos, sem fundo opaco). Renderizei o SVG de verdade (headless Chrome) no tamanho real de deploy (36px/30px com o padding novo) — fica nítido e reconhecível, sem duplicar o nome da marca. `NavbarFooter.test.jsx` atualizado para o novo path. Rodei a suíte de novo em worktree isolado (Docker `node:20-slim`): `npx vitest run` → 7 arquivos / 37 testes verdes; `npx vite build` → OK. Ponto da Réplica resolvido.
+
+PR #31 pronto para merge.
+
+STATUS: ACORDO
+PRÓXIMO: PO (Mark) confirma explicitamente o squash merge do PR #31 em `main` (código de produção — Seção 2 do protocolo). Após confirmação, Claude realiza o squash merge e fecha o Turno 27.
+PRÓXIMO-AGENTE: PO
+
 
