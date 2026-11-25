@@ -29,6 +29,7 @@ const MOCK_PROJECTS = [
 export function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initialError, setInitialError] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(null);
@@ -38,49 +39,75 @@ export function Dashboard() {
   const loadingMoreRef = useRef(false);
   const hasMoreRef = useRef(false);
 
-  const fetchInitialProjects = async () => {
+  const fetchInitialProjects = useCallback(async () => {
+    setLoading(true);
+    setInitialError(null);
+    setLoadMoreError(null);
+
+    let supabaseClient = null;
     try {
-      setLoading(true);
-      setLoadMoreError(null);
+      const mod = await import('../lib/supabase');
+      supabaseClient = mod?.supabase ?? null;
+    } catch (err) {
+      console.error('[Dashboard] Erro ao inicializar cliente Supabase:', err);
+      setProjects([]);
+      setInitialError('Não foi possível carregar os projetos agora.');
+      setHasMore(false);
+      hasMoreRef.current = false;
+      setLoading(false);
+      return;
+    }
 
-      const { supabase } = await import('../lib/supabase');
-      if (!supabase) {
+    if (!supabaseClient) {
+      if (import.meta.env.DEV) {
         setProjects(MOCK_PROJECTS);
-        setHasMore(false);
-        hasMoreRef.current = false;
-        return;
+      } else {
+        console.error('[Dashboard] Cliente Supabase não configurado em produção.');
+        setProjects([]);
+        setInitialError('Não foi possível carregar os projetos agora.');
       }
+      setHasMore(false);
+      hasMoreRef.current = false;
+      setLoading(false);
+      return;
+    }
 
+    try {
       const from = 0;
       const to = PAGE_SIZE - 1;
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('projects')
         .select('*')
         .eq('visible', true)
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      if (!error && data) {
-        setProjects(data.length > 0 ? data : MOCK_PROJECTS);
-        const more = data.length === PAGE_SIZE;
-        setHasMore(more);
-        hasMoreRef.current = more;
-        pageRef.current = 1;
-      } else {
-        setProjects(MOCK_PROJECTS);
+      if (error) {
+        console.error('[Dashboard] Erro ao carregar projetos:', error);
+        setProjects([]);
+        setInitialError('Não foi possível carregar os projetos agora.');
         setHasMore(false);
         hasMoreRef.current = false;
+        return;
       }
-    } catch (e) {
-      console.warn('Usando projetos mockados como fallback', e);
-      setProjects(MOCK_PROJECTS);
+
+      const list = Array.isArray(data) ? data : [];
+      setProjects(list);
+      const more = list.length === PAGE_SIZE;
+      setHasMore(more);
+      hasMoreRef.current = more;
+      pageRef.current = 1;
+    } catch (err) {
+      console.error('[Dashboard] Erro ao carregar projetos:', err);
+      setProjects([]);
+      setInitialError('Não foi possível carregar os projetos agora.');
       setHasMore(false);
       hasMoreRef.current = false;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchMoreProjects = useCallback(async () => {
     if (loadingMoreRef.current || !hasMoreRef.current) return;
@@ -128,7 +155,7 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchInitialProjects();
-  }, []);
+  }, [fetchInitialProjects]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -172,11 +199,24 @@ export function Dashboard() {
       <section className="projects-section">
         <div className="section-header">
           <h2>Projetos em Destaque</h2>
-          <span className="projects-count">{projects.length} projetos</span>
+          {!loading && !initialError && (
+            <span className="projects-count">{projects.length} projetos</span>
+          )}
         </div>
 
         {loading ? (
           <div className="loading-container">Carregando projetos...</div>
+        ) : initialError ? (
+          <div className="projects-feedback projects-error" role="alert">
+            <p>{initialError}</p>
+            <button type="button" onClick={fetchInitialProjects} className="btn-retry">
+              Tentar novamente
+            </button>
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="projects-feedback projects-empty" role="status">
+            <p>Novos projetos em breve.</p>
+          </div>
         ) : (
           <>
             <div className="projects-grid">
@@ -282,6 +322,25 @@ export function Dashboard() {
           text-align: center;
           padding: 3rem;
           opacity: 0.7;
+        }
+
+        .projects-feedback {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
+          text-align: center;
+          padding: 2.5rem 1.5rem;
+          border: 1px dashed var(--card-border);
+          border-radius: var(--radius-md, 12px);
+          color: var(--text-color);
+          opacity: 0.85;
+        }
+
+        .projects-feedback p {
+          margin: 0;
+          font-size: 0.95rem;
         }
 
         .scroll-sentinel {
