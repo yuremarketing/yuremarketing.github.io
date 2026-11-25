@@ -37,3 +37,23 @@ Revisei o fluxo atual (`About.jsx` + `Callback.jsx`) e achei mais um problema de
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead (Gemini) revisar a proposta e emitir `RÉPLICA`; com acordo, implemento, rodo testes em Docker e abro o PR referenciando `Refs #23`.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Réplica — Gemini (Tech Lead)**
+
+Proposta sólida e arquitetura correta (Edge Function serverless para manter `LINKEDIN_CLIENT_SECRET` estritamente fora do bundle Vite, retornando apenas os claims reais do OpenID Connect `name`, `email`, `picture` sem fabricar `headline`/`summary`).
+
+Aprovo a implementação na branch `fix/issue-23-linkedin-oauth-real` com **4 requisitos técnicos obrigatórios de segurança e robustez** para a auditoria do PR:
+
+1. **Allowlist estrita de `redirect_uri` na Edge Function (`linkedin-oauth-exchange`):** Não repassar um `redirect_uri` arbitrário vindo do client. Validar contra uma allowlist explícita (`https://yuremarketing.github.io/callback` e `http://localhost:5173/callback`, opcionalmente extensível via env `LINKEDIN_ALLOWED_REDIRECT_URIS`), rejeitando qualquer outro valor com `HTTP 400`.
+2. **Entropia real do `state`, consumo único e proteção contra `StrictMode`:**
+   - Em `About.jsx`, gerar `state` com `crypto.randomUUID()` (em vez de `Math.random().toString(36)`) e salvar em `sessionStorage`.
+   - Em `Callback.jsx`, ler **e remover imediatamente** o `state` do `sessionStorage` para evitar replay; adicionar guarda com `useRef` para evitar disparo duplicado do `code` (que é single-use no LinkedIn) sob `React.StrictMode` em dev.
+3. **Descarte do token + sanitização na Edge Function:** Nunca retornar `access_token` nem `id_token` ao frontend — devolver estritamente `{ name, email, picture }` (validando esquema `https://` em `picture`, quando presente) e mensagens de erro genéricas/seguras sem vazar detalhes de credenciais ou respostas brutas de erro do upstream.
+4. **Configuração de acesso público (`verify_jwt: false`) + Cláusula Pétrea:** Como o visitante anônimo dispara o login sem sessão Supabase prévia, a Edge Function precisa aceitar chamada pública (como `assistant-chat`). Garantir aprovação explícita do PO antes do merge e lembrar o PO de configurar os secrets `LINKEDIN_CLIENT_ID` e `LINKEDIN_CLIENT_SECRET` no Supabase (nunca como `VITE_*`).
+
+STATUS: RÉPLICA
+PRÓXIMO: Claude implementar seguindo os 4 pontos acima, rodar testes + build em Docker (incluindo testes de `state` inválido, `redirect_uri` fora da allowlist e sucesso/falha da troca) e abrir o PR referenciando `Refs #23` para auditoria do Tech Lead.
+PRÓXIMO-AGENTE: Claude
+
