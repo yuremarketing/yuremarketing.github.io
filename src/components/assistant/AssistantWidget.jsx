@@ -16,7 +16,15 @@ export function AssistantWidget() {
       {open && (
         <section className="assistant-panel glass-panel" role="dialog" aria-label="Assistente do Yure">
           <header className="assistant-panel-head">
-            <div className="assistant-avatar">YM</div>
+            <div className="assistant-avatar">
+              <img
+                src="/images/assistant-avatar.jpg"
+                alt="Avatar do Assistente do Yure"
+                className="assistant-avatar-img"
+                width="36"
+                height="36"
+              />
+            </div>
             <div className="assistant-meta">
               <p className="assistant-title">Assistente do Yure</p>
               <p className="assistant-status">
@@ -25,7 +33,7 @@ export function AssistantWidget() {
               </p>
             </div>
             <button type="button" className="assistant-close" onClick={() => setOpen(false)} aria-label="Fechar assistente">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                 <path d="M5 5l14 14M19 5L5 19" />
               </svg>
             </button>
@@ -68,21 +76,20 @@ export function AssistantWidget() {
         }
 
         .assistant-avatar {
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
-          background: rgba(0, 0, 0, 0.06);
-          color: var(--accent-color);
-          display: grid;
-          place-items: center;
-          font-family: var(--font-mono);
-          font-size: 0.75rem;
-          font-weight: 600;
+          overflow: hidden;
+          border: 1.5px solid rgba(56, 189, 248, 0.55);
+          background: #0f2547;
           flex-shrink: 0;
         }
 
-        [data-theme='dark'] .assistant-avatar {
-          background: rgba(255, 255, 255, 0.08);
+        .assistant-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
         }
 
         .assistant-meta {

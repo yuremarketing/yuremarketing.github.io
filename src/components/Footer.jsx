@@ -8,7 +8,13 @@ export function Footer() {
       <div className="container footer-container">
         <div className="footer-brand">
           <div className="footer-logo-row">
-            <span className="footer-badge">YM</span>
+            <img
+              src="/images/logo-yuremarketing-icon.svg"
+              alt=""
+              className="footer-logo-mark"
+              width="30"
+              height="30"
+            />
             <span className="footer-name">yuremarketing</span>
           </div>
           <p className="footer-tagline">
@@ -84,13 +90,24 @@ export function Footer() {
           font-size: 1rem;
         }
 
-        .footer-badge {
-          background: var(--accent-color);
-          color: #ffffff;
-          padding: 0.15rem 0.45rem;
-          border-radius: 6px;
-          font-family: var(--font-mono);
-          font-size: 0.8rem;
+        .footer-logo-mark {
+          width: 30px;
+          height: 30px;
+          padding: 3px;
+          border-radius: 8px;
+          object-fit: contain;
+          background: #ffffff;
+          border: 1px solid var(--card-border);
+          transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .footer-logo-row:hover .footer-logo-mark {
+          border-color: #38bdf8;
+          box-shadow: 0 0 12px rgba(56, 189, 248, 0.55);
+
+          @media (prefers-reduced-motion: no-preference) {
+            transform: scale(1.18);
+          }
         }
 
         .footer-tagline {
