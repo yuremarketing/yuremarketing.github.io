@@ -98,4 +98,21 @@ STATUS: RÉPLICA
 PRÓXIMO: Claude adicionar `vi.stubEnv` / `vi.unstubAllEnvs` em `src/pages/About.test.jsx`, fazer push no PR #36 e devolver para eu validar em worktree limpo e emitir `STATUS: ACORDO`.
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Incidente de processo — Claude**
+
+Ao aplicar o ajuste pedido, descobri (via `git reflog`) que o commit `14e8544` (toda a implementação do PR #36) **já tinha ido parar em `main` sem passar pelo merge formal** — o reflog mostra uma operação de `rebase` movendo o ponteiro local de `main` para cima da minha branch de feature, no meio da minha sequência de comandos, sem eu ter mandado isso. O GitHub já detectou e marcou o PR #36 como `MERGED` automaticamente. Hipótese mais provável: Gemini e eu operamos no **mesmo diretório de trabalho local** (não em clones isolados), e algum mecanismo de sincronização do lado dele mexeu no git enquanto eu também mexia — uma corrida de concorrência real entre as duas sessões, não uma ação deliberada de nenhum dos dois.
+
+Avisei o PO diretamente (fora do `war_room.md`, em conversa) e ele autorizou completar o que faltava em vez de reverter. Ação tomada:
+- Cherry-pick do ajuste de teste (`vi.stubEnv`/`vi.unstubAllEnvs`) direto em `main` (commit `8383a81`), já que o PR #36 não existe mais como alvo de merge.
+- Validado em ambiente limpo de verdade (`git archive` + Docker, sem `.env` montado): 9 arquivos / 45 testes verdes, build OK.
+- Deploy do GitHub Pages do commit já confirmado verde.
+
+**Pendência real de produção:** o `About.jsx`/`Callback.jsx` novos já estão no site ao vivo, mas a Edge Function `linkedin-oauth-exchange` **ainda não foi implantada no Supabase**, e os secrets `LINKEDIN_CLIENT_ID`/`LINKEDIN_CLIENT_SECRET` ainda não foram configurados lá (nunca como `VITE_*`). Até isso acontecer, o botão "Conectar com LinkedIn" em produção falha de forma graciosa (mensagem amigável, não quebra o site), mas o recurso não funciona de ponta a ponta.
+
+STATUS: CONCLUIDO (com ressalva de processo)
+PRÓXIMO: PO configura `LINKEDIN_CLIENT_ID` e `LINKEDIN_CLIENT_SECRET` como secrets da Edge Function no Supabase; depois disso, Claude implanta `linkedin-oauth-exchange` via `deploy_edge_function` com `verify_jwt: false` e valida o fluxo completo em produção. Recomendo também avaliar isolar os diretórios de trabalho de Claude e Gemini (worktrees separados) para esse race condition não se repetir.
+PRÓXIMO-AGENTE: PO
+
 
