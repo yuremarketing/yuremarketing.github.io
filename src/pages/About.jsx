@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
+const STATIC_BIO = (
+  <>
+    Olá! Sou o criador por trás do portfólio <strong>yuremarketing</strong>. Desenvolvo aplicações web modernas,
+    arquiteturas escaláveis e soluções avançadas baseadas em Inteligência Artificial.
+  </>
+);
+
 export function About() {
   const linkedinClientId = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
   const isLinkedInConfigured = Boolean(linkedinClientId);
@@ -20,7 +27,11 @@ export function About() {
   const handleLinkedInLogin = () => {
     if (!isLinkedInConfigured) return;
     const scope = 'openid profile email';
-    const state = Math.random().toString(36).substring(7);
+    // crypto.randomUUID() (não Math.random()) + sessionStorage: o Callback
+    // precisa comparar esse valor de volta pra proteção real contra CSRF
+    // (achado do Tech Lead, Turno 29).
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('linkedin_oauth_state', state);
     const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${linkedinClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
     window.location.href = authUrl;
   };
@@ -36,17 +47,16 @@ export function About() {
         {profile ? (
           <div className="profile-container">
             <div className="profile-header">
-              <img src={profile.picture} alt={profile.name} className="profile-avatar" />
+              {profile.picture && <img src={profile.picture} alt={profile.name} className="profile-avatar" />}
               <div>
                 <h1 className="profile-name">{profile.name}</h1>
-                <p className="profile-headline">{profile.headline}</p>
                 <span className="badge-connected">✓ LinkedIn Conectado</span>
               </div>
             </div>
 
             <div className="profile-body">
               <h2>Resumo Profissional</h2>
-              <p className="profile-summary">{profile.summary}</p>
+              <p className="profile-summary">{STATIC_BIO}</p>
             </div>
 
             <button onClick={handleDisconnect} className="btn-disconnect">
@@ -56,10 +66,7 @@ export function About() {
         ) : (
           <div className="default-about">
             <h1 className="about-title">Sobre Mim</h1>
-            <p className="about-bio">
-              Olá! Sou o criador por trás do portfólio <strong>yuremarketing</strong>. Desenvolvo aplicações web modernas,
-              arquiteturas escaláveis e soluções avançadas baseadas em Inteligência Artificial.
-            </p>
+            <p className="about-bio">{STATIC_BIO}</p>
 
             <div className="linkedin-box">
               <h2>Integração com LinkedIn</h2>
@@ -130,12 +137,6 @@ export function About() {
           font-size: 1.8rem;
           font-weight: 800;
           margin-bottom: 0.2rem;
-        }
-
-        .profile-headline {
-          font-size: 1rem;
-          opacity: 0.85;
-          margin-bottom: 0.5rem;
         }
 
         .badge-connected {
