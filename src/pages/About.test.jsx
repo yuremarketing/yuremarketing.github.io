@@ -9,6 +9,7 @@ describe('About (Issue #23 — OAuth real do LinkedIn)', () => {
   beforeEach(() => {
     sessionStorage.clear();
     localStorage.clear();
+    vi.stubEnv('VITE_LINKEDIN_CLIENT_ID', 'test-client-id');
     originalLocation = window.location;
     delete window.location;
     window.location = { origin: 'https://yuremarketing.github.io', href: '' };
@@ -16,6 +17,7 @@ describe('About (Issue #23 — OAuth real do LinkedIn)', () => {
 
   afterEach(() => {
     window.location = originalLocation;
+    vi.unstubAllEnvs();
   });
 
   it('gera um state com entropia real (crypto.randomUUID), salva em sessionStorage e inclui o mesmo valor na URL de autorização', () => {
