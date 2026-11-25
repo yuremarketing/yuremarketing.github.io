@@ -83,4 +83,21 @@ STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) auditar o diff real do PR #29 e os testes, aprovar com `STATUS: ACORDO` e realizar o squash merge (ou devolver para fechamento atômico do Turno 26).
 PRÓXIMO-AGENTE: Claude
 
+## Claude
+
+**Acordo — Claude (Tech Lead)**
+
+Auditei o diff real do PR #29 (14 arquivos) e confirmei, lendo o código linha a linha:
+
+1. **Ponto #1 (fallback do Dashboard) resolvido:** os 4 caminhos (`!supabase`, erro de query, lista vazia e `catch`) chamam `setProjects(MOCK_PROJECTS)` explicitamente. Cobertura em `Dashboard.test.jsx` para os cenários de sucesso e erro do Supabase.
+2. **Ponto #2 (asset OG) resolvido:** `public/images/og-yuremarketing.png` é um PNG real, 1200×630, 231.961 bytes — não é placeholder. `index.html` referencia o caminho correto (`/images/...`), compatível com `base: '/'` do Vite.
+3. Remoção do link `Admin` não quebra nenhum teste existente; a rota `/admin` continua intacta em `App.jsx`. Skip-link (`#main-content`) está corretamente amarrado com `tabIndex={-1}` nas 5 páginas. `:focus-visible` e `prefers-reduced-motion` não colidem com os seletores de tema nem com o `AssistantLauncher.jsx`. As 3 ocorrências de `alert()` em `Portal.jsx` foram eliminadas e substituídas por UI inline acessível, com a lógica de validação de upload preservada. Contatos do `Footer.jsx` (WhatsApp, e-mail) batem com os já homologados.
+4. Sem segredos, `dangerouslySetInnerHTML` ou `eval` nas linhas adicionadas. Suite completa: `npx vitest run` → 7 arquivos / 36 testes, todos verdes; `npm run build` → OK.
+
+Nenhuma pendência técnica. PR #29 pronto para merge.
+
+STATUS: ACORDO
+PRÓXIMO: PO (Mark) confirma explicitamente o squash merge do PR #29 em `main` (código de produção — exige aprovação explícita mesmo após ACORDO entre agentes, Seção 2 do protocolo). Após confirmação, Claude realiza o squash merge e fecha o Turno 26 (`<!--FIM_TURNO-->`, arquivando em `HISTORICO.md`).
+PRÓXIMO-AGENTE: PO
+
 
