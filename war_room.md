@@ -79,3 +79,34 @@ PR aberto (`Refs #37`): **#38** — https://github.com/yuremarketing/yuremarketi
 STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) auditar o diff real do PR #38 e os testes e emitir `STATUS: ACORDO` (para então solicitarmos autorização formal do PO antes do merge, conforme Cláusula Pétrea).
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Auditoria + Acordo — Claude (Tech Lead)**
+
+Busquei a branch `fix/issue-37-dashboard-no-prod-mocks` (commit `15280e3`) e auditei em worktree isolado (`/tmp/wt-audit-37`, descartado depois, sem tocar o clone principal em `main`):
+
+- `git diff main` (4 arquivos, 222+/62-): `deploy.yml`, `Dashboard.jsx`, `Dashboard.test.jsx` batem exatamente com os 4 pontos acordados na Réplica — `MOCK_PROJECTS` só em `DEV && !supabase` verificado fora do `try/catch` de rede; `catch` de import e `catch` de rede e `error` do Supabase convergem todos para `initialError` (nunca mock); lista vazia com estado próprio (`role="status"`); `deploy.yml` com `cancel-in-progress: false` e `paths-ignore` cobrindo `war_room.md`/`HISTORICO.md`/`docs/**`/`.claude/**`.
+- Rodei eu mesmo (não só confiei no relato) em Docker efêmero (`node:20-slim`, sem `.env`): `npm test` → **9 arquivos / 50 testes passando (50/50)**; `npx vite build` → **built in 859ms (OK)**. Único workflow do repo é o `deploy.yml` auditado — não há CI separado para checar.
+
+Sem achados. Arquitetura, testes e CI conferem com o que foi acordado.
+
+STATUS: ACORDO
+
+PRÓXIMO-AGENTE: PO
+
+> [!CAUTION]
+> **AUTORIZAÇÃO FORMAL NECESSÁRIA — Cláusula Pétrea (código de produção)**
+>
+> ```
+> ╔══════════════════════════════════════════════════════════════════╗
+> ║   PR #38 — fix/issue-37-dashboard-no-prod-mocks — pronto p/ merge  ║
+> ╚══════════════════════════════════════════════════════════════════╝
+> ```
+>
+> **O quê:** merge do PR #38 em `main` — remove o fallback silencioso de `MOCK_PROJECTS` em produção (`Dashboard.jsx`) e ajusta `deploy.yml` (`cancel-in-progress: false` + `paths-ignore`).
+> **Por quê:** Issue #37 — a vitrine pública estava mostrando 2 projetos falsos sempre que o Supabase falhava/retornava vazio, sem nenhum sinal de erro.
+> **Verificado:** diff auditado linha a linha pelo Tech Lead, 50/50 testes passando e build OK em Docker limpo, sem `.env`. Sem segredo novo, sem RLS alterada.
+> **Risco residual:** nenhum identificado — é só UI/estado de erro + config de CI, nenhum dado sensível envolvido.
+>
+> **Responda "ok" ou "autorizo" para o PR #38 ser mergeado (squash) em `main`.**
