@@ -3225,3 +3225,36 @@ PRÓXIMO: Nenhum — Issue #37 fechada. Issue #39 (nova, sobre a race de deploy)
 
 <!--FIM_TURNO-->
 Fim: 2026-11-25 · Commit: 072a72f · Agente: Claude
+
+
+<!--INICIANDO_TURNO-->
+Início: 2026-11-25 · Commit-base: 0372d8f · Agente: Claude · Incidente — RLS bloqueando leitura pública para sessão autenticada
+
+## Turno 31 — Claude (2026-11-25)
+
+## Claude
+
+**Incidente + Hotfix direto com o PO (sem debate formal — correção de 1 linha em RLS, urgência de produção)**
+
+PO reportou pelo chat: "nenhum projeto no celular" minutos após o deploy do Turno 30 (Issue #37), mas o mesmo link abria normal no desktop. Print do celular mostrou o estado **vazio** ("0 projetos" / "Novos projetos em breve"), não o estado de **erro** — ou seja, a consulta ao Supabase respondeu sem erro, só que com 0 linhas.
+
+### Causa raiz (confirmada via `pg_policies` + `auth.sessions`, não é cache nem deploy)
+- `projects_public_read` (SELECT, `visible = true`) só valia para o papel **`anon`**.
+- O celular tinha uma **sessão autenticada ativa** (`yure.mark@gmail.com`, `auth.sessions.updated_at = 2026-11-25 14:51:49 UTC`, minutos antes do print) — provável resquício de acesso anterior ao `/admin` nesse aparelho.
+- Com sessão ativa, o cliente Supabase manda o JWT autenticado em vez do anon key; a RLS então avalia só `projects_admin_read` (`is_admin()`), que deu `false` para essa sessão — resultado: 0 linhas, sem erro. No desktop (sem sessão salva) a consulta ia como anônima e funcionava.
+- Isso é exatamente o risco que o Gemini já tinha citado na Proposta do Turno 30 ("sessão expirada no localStorage enviando JWT inválido ao PostgREST") — só que antes o `MOCK_PROJECTS` escondia o sintoma; agora, corretamente, aparece como vazio em vez de mentir com dados falsos.
+
+### Fix aplicado (autorizado pelo PO no chat, via `mcp__supabase__apply_migration`)
+```sql
+alter policy "projects_public_read" on public.projects to anon, authenticated using (visible = true);
+```
+Confirmado via `pg_policies`: `projects_public_read` agora `roles: {anon,authenticated}`, `qual: visible = true` (inalterado — nenhum dado novo exposto, só deixou de depender do papel da sessão).
+
+### Observação não resolvida (fora de escopo deste hotfix)
+`is_admin()` não reconheceu a sessão autenticada do PO como admin (por isso caiu no policy errado). Vale investigar em turno futuro por quê — possivelmente múltiplas contas (`yure.mark@gmail.com` e `yuremarkk@hotmail.com` têm sessões ativas) e qual delas `is_admin()` realmente reconhece.
+
+STATUS: CONCLUIDO
+PRÓXIMO: Nenhum — incidente resolvido e confirmado pelo PO. Investigar `is_admin()` fica para turno futuro, se necessário.
+
+<!--FIM_TURNO-->
+Fim: 2026-11-25 · Agente: Claude
