@@ -49,14 +49,39 @@ export function AssistantLauncher({ open, onClick }) {
           height: 100%;
           object-fit: cover;
           display: block;
+          transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes assistantNeonPulse {
+          0%, 100% {
+            border-color: rgba(56, 189, 248, 0.75);
+            box-shadow:
+              0 10px 26px rgba(0, 122, 204, 0.45),
+              0 0 12px rgba(56, 189, 248, 0.55),
+              0 0 24px rgba(0, 122, 204, 0.3);
+          }
+          50% {
+            border-color: #7dd3fc;
+            box-shadow:
+              0 14px 36px rgba(0, 122, 204, 0.7),
+              0 0 24px rgba(56, 189, 248, 0.95),
+              0 0 46px rgba(56, 189, 248, 0.55);
+          }
         }
 
         .assistant-launcher:hover {
-          border-color: #38bdf8;
-          box-shadow: 0 10px 28px rgba(0, 122, 204, 0.55), 0 0 18px rgba(56, 189, 248, 0.6);
+          border-color: #7dd3fc;
+          box-shadow: 0 12px 32px rgba(0, 122, 204, 0.6), 0 0 22px rgba(56, 189, 248, 0.85);
 
           @media (prefers-reduced-motion: no-preference) {
-            transform: translateY(-3px) scale(1.08);
+            transform: translateY(-4px) scale(1.28);
+            animation: assistantNeonPulse 1.8s ease-in-out infinite;
+          }
+        }
+
+        .assistant-launcher:hover .assistant-launcher-avatar {
+          @media (prefers-reduced-motion: no-preference) {
+            transform: scale(1.06);
           }
         }
       `}</style>
