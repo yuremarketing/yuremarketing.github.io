@@ -27,8 +27,8 @@ const MOCK_PROJECTS = [
 ];
 
 export function Dashboard() {
-  const [projects, setProjects] = useState(MOCK_PROJECTS);
-  const [loading, setLoading] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(null);
@@ -40,10 +40,16 @@ export function Dashboard() {
 
   const fetchInitialProjects = async () => {
     try {
-      const { supabase } = await import('../lib/supabase');
-      if (!supabase) return;
       setLoading(true);
       setLoadMoreError(null);
+
+      const { supabase } = await import('../lib/supabase');
+      if (!supabase) {
+        setProjects(MOCK_PROJECTS);
+        setHasMore(false);
+        hasMoreRef.current = false;
+        return;
+      }
 
       const from = 0;
       const to = PAGE_SIZE - 1;
@@ -56,16 +62,19 @@ export function Dashboard() {
         .range(from, to);
 
       if (!error && data) {
-        if (data.length > 0) {
-          setProjects(data);
-        }
+        setProjects(data.length > 0 ? data : MOCK_PROJECTS);
         const more = data.length === PAGE_SIZE;
         setHasMore(more);
         hasMoreRef.current = more;
         pageRef.current = 1;
+      } else {
+        setProjects(MOCK_PROJECTS);
+        setHasMore(false);
+        hasMoreRef.current = false;
       }
     } catch (e) {
       console.warn('Usando projetos mockados como fallback', e);
+      setProjects(MOCK_PROJECTS);
       setHasMore(false);
       hasMoreRef.current = false;
     } finally {
@@ -143,7 +152,7 @@ export function Dashboard() {
   }, [hasMore, fetchMoreProjects]);
 
   return (
-    <main className="dashboard-page container animate-fade-in">
+    <main id="main-content" tabIndex={-1} className="dashboard-page container animate-fade-in">
       <section className="hero-section">
         <h1 className="hero-title">
           Construindo Soluções de <span className="highlight">Engenharia de IA</span> & Software

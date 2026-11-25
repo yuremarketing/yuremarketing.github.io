@@ -12,12 +12,29 @@
   --card-bg-dark: rgba(26, 26, 26, 0.65);
   --card-border-dark: rgba(255, 255, 255, 0.08);
 
+  /* Fallback para navegadores sem suporte a light-dark() */
+  --bg-color: var(--bg-light);
+  --text-color: var(--fg-light);
+  --accent-color: var(--accent-light);
+  --card-bg: var(--card-bg-light);
+  --card-border: var(--card-border-light);
+
+  @media (prefers-color-scheme: dark) {
+    --bg-color: var(--bg-dark);
+    --text-color: var(--fg-dark);
+    --accent-color: var(--accent-dark);
+    --card-bg: var(--card-bg-dark);
+    --card-border: var(--card-border-dark);
+  }
+
   /* Modern light-dark() CSS color tokens */
-  --bg-color: light-dark(var(--bg-light), var(--bg-dark));
-  --text-color: light-dark(var(--fg-light), var(--fg-dark));
-  --accent-color: light-dark(var(--accent-light), var(--accent-dark));
-  --card-bg: light-dark(var(--card-bg-light), var(--card-bg-dark));
-  --card-border: light-dark(var(--card-border-light), var(--card-border-dark));
+  @supports (color: light-dark(white, black)) {
+    --bg-color: light-dark(var(--bg-light), var(--bg-dark));
+    --text-color: light-dark(var(--fg-light), var(--fg-dark));
+    --accent-color: light-dark(var(--accent-light), var(--accent-dark));
+    --card-bg: light-dark(var(--card-bg-light), var(--card-bg-dark));
+    --card-border: light-dark(var(--card-border-light), var(--card-border-dark));
+  }
 
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -66,7 +83,10 @@ html, body {
   color: var(--text-color);
   font-family: var(--font-sans);
   transition: background-color var(--transition-smooth), color var(--transition-smooth);
-  scroll-behavior: smooth;
+
+  @media (prefers-reduced-motion: no-preference) {
+    scroll-behavior: smooth;
+  }
 }
 
 #root {
@@ -87,6 +107,43 @@ button {
   background: none;
 }
 
+/* Indicador global acessível de foco por teclado */
+:where(a:any-link, button, input, textarea, select):focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Utilitário visualmente oculto (mantém na árvore de acessibilidade e exibe ao focar) */
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.skip-link:where(:focus, :focus-visible, :active) {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 9999;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-color);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-lg);
+}
+
 /* Glassmorphism utility card */
 .glass-panel {
   background: var(--card-bg);
@@ -99,9 +156,12 @@ button {
 }
 
 .glass-panel:hover {
-  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
   border-color: var(--accent-color);
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateY(-4px);
+  }
 }
 
 /* Container */
@@ -119,5 +179,7 @@ button {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.6s ease-out forwards;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
 }

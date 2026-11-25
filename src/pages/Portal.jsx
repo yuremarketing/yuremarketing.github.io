@@ -24,6 +24,8 @@ export function Portal() {
   const [reqTitle, setReqTitle] = useState('');
   const [reqDescription, setReqDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [fileErrorMsg, setFileErrorMsg] = useState('');
+  const [downloadErrorMsg, setDownloadErrorMsg] = useState('');
 
   useEffect(() => {
     if (!supabase) return;
@@ -127,23 +129,27 @@ export function Portal() {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      setFileErrorMsg('');
+      return;
+    }
 
     const ext = '.' + file.name.split('.').pop().toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      alert(`Extensão não permitida. Permitidos: ${ALLOWED_EXTENSIONS.join(', ')}`);
+      setFileErrorMsg(`Extensão não permitida. Permitidos: ${ALLOWED_EXTENSIONS.join(', ')}`);
       e.target.value = '';
       setSelectedFile(null);
       return;
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      alert('O arquivo ultrapassa o limite máximo de 15MB.');
+      setFileErrorMsg('O arquivo ultrapassa o limite máximo de 15MB.');
       e.target.value = '';
       setSelectedFile(null);
       return;
     }
 
+    setFileErrorMsg('');
     setSelectedFile(file);
   };
 
@@ -153,6 +159,7 @@ export function Portal() {
 
     setSubmitting(true);
     setNewStatusMsg('');
+    setFileErrorMsg('');
 
     try {
       // 1. Criar client_request
@@ -232,12 +239,13 @@ export function Portal() {
   };
 
   const handleDownloadAttachment = async (path, filename) => {
+    setDownloadErrorMsg('');
     const { data, error } = await supabase.storage
       .from('client-assets')
       .createSignedUrl(path, 120);
 
     if (error || !data?.signedUrl) {
-      alert('Não foi possível gerar link de download.');
+      setDownloadErrorMsg('Não foi possível gerar link de download.');
       return;
     }
 
@@ -253,7 +261,7 @@ export function Portal() {
   // Se o visitante não está autenticado
   if (!user) {
     return (
-      <main className="portal-container container">
+      <main id="main-content" tabIndex={-1} className="portal-container container">
         <section className="portal-auth-card">
           <header className="portal-auth-header">
             <span className="portal-badge">Área do Cliente</span>
@@ -270,6 +278,7 @@ export function Portal() {
                 id="client-email"
                 type="email"
                 required
+                autoComplete="email"
                 placeholder="seu.email@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -283,7 +292,7 @@ export function Portal() {
           </form>
 
           {authMsg.text && (
-            <div className={`portal-alert ${authMsg.type === 'error' ? 'portal-alert-error' : 'portal-alert-success'}`}>
+            <div role="alert" className={`portal-alert ${authMsg.type === 'error' ? 'portal-alert-error' : 'portal-alert-success'}`}>
               {authMsg.text}
             </div>
           )}
@@ -295,7 +304,7 @@ export function Portal() {
   }
 
   return (
-    <main className="portal-container container">
+    <main id="main-content" tabIndex={-1} className="portal-container container">
       <header className="portal-dashboard-header">
         <div>
           <span className="portal-badge">Área Privada</span>
@@ -313,7 +322,7 @@ export function Portal() {
       </header>
 
       {newStatusMsg && (
-        <div className="portal-alert portal-alert-success" style={{ marginBottom: '1.5rem' }}>
+        <div role="status" className="portal-alert portal-alert-success" style={{ marginBottom: '1.5rem' }}>
           {newStatusMsg}
         </div>
       )}
@@ -323,8 +332,9 @@ export function Portal() {
           <h2 className="section-title">Abrir Nova Solicitação de Orçamento</h2>
           <form onSubmit={handleCreateRequest} className="new-request-form">
             <div className="form-group">
-              <label className="form-label">Título do Projeto</label>
+              <label htmlFor="portal-req-title" className="form-label">Título do Projeto</label>
               <input
+                id="portal-req-title"
                 type="text"
                 placeholder="Ex: Landing Page para Consultoria / App Mobile"
                 value={reqTitle}
@@ -334,8 +344,9 @@ export function Portal() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Descrição do Escopo / Necessidade *</label>
+              <label htmlFor="portal-req-desc" className="form-label">Descrição do Escopo / Necessidade *</label>
               <textarea
+                id="portal-req-desc"
                 required
                 rows={4}
                 placeholder="Descreva detalhes, objetivos, prazos ou tecnologias esperadas..."
@@ -346,14 +357,21 @@ export function Portal() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Anexar Briefing ou Imagem de Referência (Opcional, max 15MB)</label>
+              <label htmlFor="portal-file-upload" className="form-label">Anexar Briefing ou Imagem de Referência (Opcional, max 15MB)</label>
+              <small id="portal-file-hint" className="form-hint">Formatos aceitos: PDF, PNG, JPG, ZIP.</small>
               <input
+                id="portal-file-upload"
                 type="file"
                 accept=".pdf,.png,.jpg,.jpeg,.zip"
+                aria-describedby="portal-file-hint"
                 onChange={handleFileChange}
                 className="portal-file-input"
               />
-              <small className="form-hint">Formatos aceitos: PDF, PNG, JPG, ZIP.</small>
+              {fileErrorMsg && (
+                <div role="alert" className="portal-alert portal-alert-error" style={{ marginTop: '0.6rem' }}>
+                  {fileErrorMsg}
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={submitting} className="portal-btn-primary">
@@ -374,7 +392,10 @@ export function Portal() {
               {requests.map((req) => (
                 <li
                   key={req.id}
-                  onClick={() => setSelectedRequest(req)}
+                  onClick={() => {
+                    setDownloadErrorMsg('');
+                    setSelectedRequest(req);
+                  }}
                   className={`request-item ${selectedRequest?.id === req.id ? 'active' : ''}`}
                 >
                   <div className="request-item-top">
@@ -426,6 +447,11 @@ export function Portal() {
                       </div>
                     ))}
                   </div>
+                  {downloadErrorMsg && (
+                    <div role="alert" className="portal-alert portal-alert-error" style={{ marginTop: '0.6rem' }}>
+                      {downloadErrorMsg}
+                    </div>
+                  )}
                 </div>
               )}
 

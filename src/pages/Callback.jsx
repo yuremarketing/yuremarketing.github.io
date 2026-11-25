@@ -46,9 +46,9 @@ export function Callback() {
   }, [searchParams, navigate]);
 
   return (
-    <main className="callback-page container animate-fade-in">
+    <main id="main-content" tabIndex={-1} className="callback-page container animate-fade-in">
       <div className="glass-panel callback-card">
-        {loading ? <div className="spinner">🔄</div> : null}
+        {loading ? <div className="spinner" aria-hidden="true">🔄</div> : null}
         <h2>{status}</h2>
       </div>
 
@@ -68,7 +68,10 @@ export function Callback() {
         .spinner {
           font-size: 2rem;
           margin-bottom: 1rem;
-          animation: spin 1s linear infinite;
+
+          @media (prefers-reduced-motion: no-preference) {
+            animation: spin 1s linear infinite;
+          }
         }
 
         @keyframes spin {

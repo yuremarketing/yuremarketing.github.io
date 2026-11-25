@@ -13,30 +13,27 @@ export function Navbar() {
           <span className="logo-text">yuremarketing</span>
         </Link>
 
-        <nav className="navbar-nav">
+        <nav className="navbar-nav" aria-label="Principal">
           <Link
             to="/"
+            aria-current={location.pathname === '/' ? 'page' : undefined}
             className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
           >
             Projetos
           </Link>
           <Link
             to="/about"
+            aria-current={location.pathname === '/about' ? 'page' : undefined}
             className={`nav-link ${location.pathname === '/about' ? 'active' : ''}`}
           >
             Sobre Mim
           </Link>
           <Link
             to="/portal"
+            aria-current={location.pathname === '/portal' ? 'page' : undefined}
             className={`nav-link ${location.pathname === '/portal' ? 'active' : ''}`}
           >
             Área do Cliente
-          </Link>
-          <Link
-            to="/admin"
-            className={`nav-link admin-link ${location.pathname === '/admin' ? 'active' : ''}`}
-          >
-            Admin
           </Link>
           <ThemeToggle />
         </nav>
@@ -58,6 +55,8 @@ export function Navbar() {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 1rem;
+          flex-wrap: wrap;
         }
 
         .navbar-logo {
@@ -81,6 +80,7 @@ export function Navbar() {
           display: flex;
           align-items: center;
           gap: 1.2rem;
+          flex-wrap: wrap;
         }
 
         .nav-link {
@@ -88,25 +88,26 @@ export function Navbar() {
           font-size: 0.95rem;
           padding: 0.4rem 0.8rem;
           border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
+          transition: color var(--transition-fast), background-color var(--transition-fast), opacity var(--transition-fast);
           opacity: 0.8;
         }
 
-        .nav-link:hover, .nav-link.active {
+        .nav-link:hover,
+        .nav-link.active,
+        .nav-link[aria-current="page"] {
           opacity: 1;
           color: var(--accent-color);
           background: rgba(0, 0, 0, 0.04);
         }
 
-        [data-theme="dark"] .nav-link:hover,
-        [data-theme="dark"] .nav-link.active {
-          background: rgba(255, 255, 255, 0.05);
+        .nav-link[aria-current="page"] {
+          font-weight: 700;
         }
 
-        .admin-link {
-          font-family: var(--font-mono);
-          font-size: 0.85rem;
-          border: 1px dashed var(--card-border);
+        [data-theme="dark"] .nav-link:hover,
+        [data-theme="dark"] .nav-link.active,
+        [data-theme="dark"] .nav-link[aria-current="page"] {
+          background: rgba(255, 255, 255, 0.05);
         }
       `}</style>
     </header>
