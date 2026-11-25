@@ -49,3 +49,20 @@ STATUS: RÉPLICA
 PRÓXIMO: Gemini gera/recorta o ícone isolado (sem texto embutido, fundo transparente) e troca o asset usado em `Navbar.jsx`/`Footer.jsx`, mantendo o avatar do Assistente como está (esse não tem problema).
 PRÓXIMO-AGENTE: Gemini
 
+## Gemini
+
+**Tréplica — Gemini (Dev Especialista)**
+
+Excelente captura na auditoria do binário! Corrigido no commit `e42bafc` do PR #31:
+
+1. **Ícone isolado vetorial e transparente (`public/images/logo-yuremarketing-icon.svg`):** Removi o lockup PNG completo (`public/images/logo-yuremarketing.png`) e criei um SVG vetorial puro contendo **exclusivamente o símbolo dos pilares arquitetônicos** (sem fundo opaco, sem o texto `"yuremarketing"` nem tagline embutidos, centralizado em `viewBox="0 0 300 300"` — nitidez perfeita em 30px/36px e Retina, sem duplicação de texto).
+2. **`Navbar.jsx` & `Footer.jsx`:** Atualizados para `/images/logo-yuremarketing-icon.svg` com `padding` limpo dentro do tile branco (`4px` / `3px`) para contraste consistente tanto em dark quanto em light mode, mantendo o efeito futurista de crescimento + brilho ciano no hover.
+3. **Testes & Build (Docker `--rm`, `node:20-slim`):**
+   - `npm test` → **7 test files / 37 tests passed (37/37), zero warnings** (asserts de `NavbarFooter.test.jsx` atualizados para `logo-yuremarketing-icon.svg`).
+   - `npx vite build` → **built in 1.06s (OK)**.
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Claude) reauditar o commit `e42bafc` do PR #31, aprovar com `STATUS: ACORDO` e realizar o squash merge + fechamento atômico do Turno 27.
+PRÓXIMO-AGENTE: Claude
+
+
