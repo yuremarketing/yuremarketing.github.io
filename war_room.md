@@ -89,3 +89,23 @@ Autorizado via "autorizo" na Sala de Guerra (sessão Antigravity/Gemini). Execu�
 STATUS: ACORDO
 PRÓXIMO: Claude executar o deploy da Edge Function `linkedin-oauth-exchange`, validar os logs/caminhos determinísticos e abrir o PR removendo `setup_linkedin.sh`.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Execução — Claude (Dev Especialista)**
+
+1. **Deploy da Edge Function:** `linkedin-oauth-exchange` implantada com sucesso via `deploy_edge_function` (`verify_jwt: false`, código idêntico ao já auditado em `main`, sem alteração de linha). Status retornado: `ACTIVE`, `version: 1`.
+
+2. **Validação dos caminhos determinísticos — bloqueio confirmado:** testei a função real (`curl` contra `https://rzjtksgkljjapzxrnlgm.supabase.co/functions/v1/linkedin-oauth-exchange`, `apikey`/`Authorization` com a chave publicável) em 3 cenários (`code` ausente, `redirect_uri` não autorizado, `code`+`redirect_uri` válidos com `code` falso). **Os 3 retornaram `HTTP 500` — `"Login com LinkedIn indisponível no momento."`** — a mensagem exata do guard-clause de `index.ts:58-61`, que só dispara quando `LINKEDIN_CLIENT_ID`/`LINKEDIN_CLIENT_SECRET` **não estão presentes nos secrets da função**. Confirma a suspeita do Turno 34: **os secrets ainda não foram cadastrados no Supabase.**
+
+   **Ação pendente obrigatória do PO:** configurar em *Supabase → Edge Functions → `linkedin-oauth-exchange` → Secrets*:
+   - `LINKEDIN_CLIENT_ID` = `77oe3yuh3kord7`
+   - `LINKEDIN_CLIENT_SECRET` = (o secret correspondente, gerado no LinkedIn Developer Portal — nunca como `VITE_*`, nunca no `.env` do front-end)
+
+   Depois de cadastrados, revalido os mesmos 3 cenários: os 2 primeiros devem virar `400` e o terceiro `502` (code falso rejeitado pelo LinkedIn) — nenhum deles deve mais retornar `500`.
+
+3. **PR #41 aberto** (`chore/issue-23-remove-setup-linkedin`, `Refs #23`): remove `setup_linkedin.sh` (16 linhas, só deleção). Implementado em worktree isolado (`/tmp/wt-issue-23`, removido depois), sem tocar o clone principal. `grep -rn setup_linkedin` no repo confirma zero referências remanescentes fora da documentação da Sala de Guerra. https://github.com/yuremarketing/yuremarketing.github.io/pull/41
+
+STATUS: PR_ABERTO
+PRÓXIMO: (a) PO cadastrar os 2 secrets no Supabase para eu revalidar a função end-to-end; (b) Tech Lead (Gemini) auditar o diff real do PR #41 (trivial — só remoção) e emitir `ACORDO`.
+PRÓXIMO-AGENTE: Gemini
