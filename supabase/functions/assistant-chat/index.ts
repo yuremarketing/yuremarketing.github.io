@@ -1,6 +1,8 @@
 // Supabase Edge Function (Deno): proxies chat messages to the Google Gemini
 // API and streams the response back as Server-Sent Events, so GEMINI_API_KEY
 // never reaches the static GitHub Pages bundle.
+// Includes in-memory sliding-window rate limiting (hashed key, zero PII)
+// and structured cost/health observability logs without conversation content.
 
 const ALLOWED_ORIGIN = Deno.env.get("ASSISTANT_ALLOWED_ORIGIN") ?? "https://yuremarketing.github.io";
 const PRIMARY_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-latest";
@@ -9,6 +11,21 @@ const CANDIDATE_MODELS = Array.from(new Set([PRIMARY_MODEL, ...FALLBACK_MODELS])
 
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 2000;
+
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const RATE_LIMIT_PER_MINUTE = parsePositiveInt(Deno.env.get("ASSISTANT_RATE_LIMIT_MINUTE"), 8);
+const RATE_LIMIT_PER_HOUR = parsePositiveInt(Deno.env.get("ASSISTANT_RATE_LIMIT_HOUR"), 30);
+const MINUTE_WINDOW_MS = 60_000;
+const HOUR_WINDOW_MS = 3_600_000;
+const MAX_TRACKED_KEYS = 1000;
+
+const RATE_LIMIT_MESSAGE =
+  "Você já conversou bastante por aqui! Para continuar, fale direto com o Yure no WhatsApp (+55 61 99408-5093) ou por e-mail (yure.mark@gmail.com).";
 
 const SYSTEM_PROMPT = `Você é o assistente do portfólio online do Yure Mark, um engenheiro de software.
 Responda apenas perguntas sobre o Yure, sua trajetória, seus projetos e como entrar em contato com ele.
@@ -27,15 +44,101 @@ interface ChatMessage {
   content: string;
 }
 
-function jsonError(message: string, status: number) {
-  return new Response(JSON.stringify({ error: message }), {
+interface RateLimitResult {
+  allowed: boolean;
+  window?: "minute" | "hour";
+  retryAfterSeconds?: number;
+}
+
+const rateLimitStore = new Map<string, number[]>();
+
+function logEvent(payload: Record<string, unknown>) {
+  console.log(JSON.stringify({ source: "assistant-chat", ...payload }));
+}
+
+function jsonError(message: string, status: number, extra: Record<string, unknown> = {}, extraHeaders: Record<string, string> = {}) {
+  return new Response(JSON.stringify({ error: message, ...extra }), {
     status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json", ...extraHeaders },
   });
 }
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function extractClientKeyRaw(req: Request, sessionId?: unknown): string {
+  const cfIp = req.headers.get("cf-connecting-ip")?.trim();
+  if (cfIp) return `ip:${cfIp}`;
+
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const firstIp = forwardedFor.split(",")[0]?.trim();
+    if (firstIp) return `ip:${firstIp}`;
+  }
+
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return `ip:${realIp}`;
+
+  if (typeof sessionId === "string" && sessionId.trim().length > 0 && sessionId.length <= 128) {
+    return `sid:${sessionId.trim()}`;
+  }
+
+  return "anonymous";
+}
+
+async function hashIdentifier(raw: string): Promise<string> {
+  const data = new TextEncoder().encode(raw);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .slice(0, 8)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function pruneRateLimitStore(now: number) {
+  for (const [key, timestamps] of rateLimitStore.entries()) {
+    const fresh = timestamps.filter((t) => now - t < HOUR_WINDOW_MS);
+    if (fresh.length === 0) {
+      rateLimitStore.delete(key);
+    } else if (fresh.length !== timestamps.length) {
+      rateLimitStore.set(key, fresh);
+    }
+  }
+
+  while (rateLimitStore.size > MAX_TRACKED_KEYS) {
+    const oldestKey = rateLimitStore.keys().next().value;
+    if (!oldestKey) break;
+    rateLimitStore.delete(oldestKey);
+  }
+}
+
+function checkRateLimit(keyHash: string, now: number): RateLimitResult {
+  const existing = rateLimitStore.get(keyHash) ?? [];
+  const timestamps = existing.filter((t) => now - t < HOUR_WINDOW_MS);
+
+  if (timestamps.length >= RATE_LIMIT_PER_HOUR) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((timestamps[0] + HOUR_WINDOW_MS - now) / 1000));
+    rateLimitStore.set(keyHash, timestamps);
+    return { allowed: false, window: "hour", retryAfterSeconds };
+  }
+
+  const recentMinute = timestamps.filter((t) => now - t < MINUTE_WINDOW_MS);
+  if (recentMinute.length >= RATE_LIMIT_PER_MINUTE) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((recentMinute[0] + MINUTE_WINDOW_MS - now) / 1000));
+    rateLimitStore.set(keyHash, timestamps);
+    return { allowed: false, window: "minute", retryAfterSeconds };
+  }
+
+  timestamps.push(now);
+  rateLimitStore.delete(keyHash);
+  rateLimitStore.set(keyHash, timestamps);
+
+  if (rateLimitStore.size > MAX_TRACKED_KEYS) {
+    pruneRateLimitStore(now);
+  }
+
+  return { allowed: true };
 }
 
 Deno.serve(async (req) => {
@@ -52,11 +155,29 @@ Deno.serve(async (req) => {
     return jsonError("Assistente indisponível no momento.", 500);
   }
 
-  let body: { messages?: ChatMessage[] };
+  let body: { messages?: ChatMessage[]; sessionId?: unknown };
   try {
     body = await req.json();
   } catch {
     return jsonError("Corpo da requisição inválido.", 400);
+  }
+
+  const keyHash = await hashIdentifier(extractClientKeyRaw(req, body?.sessionId));
+  const rateCheck = checkRateLimit(keyHash, Date.now());
+  if (!rateCheck.allowed) {
+    const retryAfterSeconds = rateCheck.retryAfterSeconds ?? 60;
+    logEvent({
+      event: "rate_limited",
+      window: rateCheck.window,
+      keyHash,
+      retryAfterSeconds,
+    });
+    return jsonError(
+      RATE_LIMIT_MESSAGE,
+      429,
+      { code: "RATE_LIMITED", retryAfterSeconds },
+      { "Retry-After": String(retryAfterSeconds) }
+    );
   }
 
   const messages = Array.isArray(body.messages) ? body.messages : [];
@@ -112,7 +233,14 @@ Deno.serve(async (req) => {
         if (res.ok && res.body) {
           activeResponse = res;
           chosenModel = model;
-          console.log(`[Assistant] Sucesso com modelo '${model}' (tentativa ${attempt + 1}) em ${Date.now() - startTime}ms`);
+          logEvent({
+            event: "llm_success",
+            model,
+            attempt: attempt + 1,
+            latencyMs: Date.now() - startTime,
+            messageCount: messages.length,
+            keyHash,
+          });
           break;
         }
 
@@ -142,8 +270,18 @@ Deno.serve(async (req) => {
 
   if (!activeResponse || !activeResponse.body) {
     const elapsed = Date.now() - startTime;
-    console.error(`[Assistant] Todos os modelos falharam após ${elapsed}ms`);
-    return jsonError("Não consegui falar com o assistente agora. Tenta de novo em um instante.", 502);
+    logEvent({
+      event: "llm_all_failed",
+      modelsTried: CANDIDATE_MODELS,
+      latencyMs: elapsed,
+      messageCount: messages.length,
+      keyHash,
+    });
+    return jsonError(
+      "Não consegui falar com o assistente agora. Tenta de novo em um instante.",
+      502,
+      { code: "LLM_UNAVAILABLE" }
+    );
   }
 
   const encoder = new TextEncoder();
@@ -191,6 +329,7 @@ Deno.serve(async (req) => {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
+      "X-Assistant-Model": chosenModel,
     },
   });
 });
