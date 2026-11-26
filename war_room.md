@@ -108,3 +108,42 @@ Sem objeções ao restante do plano (FAQ client-side, hashing de IP, logs sem PI
 STATUS: RÉPLICA
 PRÓXIMO: Gemini incorpora os 3 pontos acima (in-memory confirmado, fix do bug em `ChatPanel.jsx`, bolha em vez de `error`) na Tréplica; se não houver divergência, fecha com ACORDO e aguarda autorização formal do PO para abrir a branch `feat/issue-35-assistant-hardening`.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica & Acordo — Gemini (Dev Especialista)**
+
+Os 3 pontos e o cuidado de implementação da Réplica foram incorporados sem ressalvas:
+
+1. **Rate limit in-memory na Edge Function (`assistant-chat/index.ts`):** confirmado sem migration — sliding window em memória (`8/min`, `30/h`, configuráveis por env var) com chave em hash SHA-256 truncado (IP real com fallback para `sessionId`), eviction/pruning com teto de `1000` chaves e logs estruturados JSON sem PII (`rate_limited`, `llm_success`, `llm_all_failed`).
+2. **Fix de `CONTACT_KEYWORDS` em `ChatPanel.jsx`:** reutilizando `lastUserQuestion` (linha 42) no `useEffect` (evitando duplicar a busca reversa) + teste de regressão garantindo abertura automática do `ContactCapture`.
+3. **Exibição de `429` e fallback sem LLM na bolha (`useAssistantChat.js`):** checagem explícita de `response.status === 429` *antes* do `if (!response.ok || !response.body)`, preenchendo o placeholder da última mensagem do assistente com a mensagem amigável do servidor (`429`) ou com `buildOfflineFallback(trimmed)` (`502`/timeout/rede) e mantendo `setError(null)` — sem bolha vazia e sem duplicar texto em `error`.
+
+### Escopo final consolidado (branch `feat/issue-35-assistant-hardening`)
+- `src/lib/assistantFaq.js` (novo) + `src/lib/assistantFaq.test.js` (novo)
+- `src/hooks/useAssistantChat.js` + `src/hooks/useAssistantChat.test.jsx` (novo)
+- `src/components/assistant/ChatPanel.jsx` + `src/components/assistant/ChatPanel.test.jsx` (novo — regressão de `CONTACT_KEYWORDS` e fluxo integrado)
+- `supabase/functions/assistant-chat/index.ts`
+
+STATUS: ACORDO
+PRÓXIMO: Autorização formal do PO (Cláusula Pétrea, código de produção + Edge Function) para criar a branch `feat/issue-35-assistant-hardening`, implementar o plano consolidado, rodar testes/build em Docker e abrir PR referenciando a Issue #35.
+PRÓXIMO-AGENTE: PO
+
+> [!CAUTION]
+> **AUTORIZAÇÃO FORMAL NECESSÁRIA — Cláusula Pétrea (Código de Produção · Issue #35 · Turno 36)**
+>
+> ```
+> ╔══════════════════════════════════════════════════════════════════════╗
+> ║   Issue #35 — feat/issue-35-assistant-hardening — ACORDO fechado     ║
+> ╚══════════════════════════════════════════════════════════════════════╝
+> ```
+>
+> **O quê:** criar a branch `feat/issue-35-assistant-hardening` e implementar:
+> 1. FAQ determinístico sem LLM client-side (`src/lib/assistantFaq.js`) antes de chamar a API.
+> 2. Rate limiting in-memory na Edge Function `assistant-chat` (`8/min`, `30/h`, hash SHA-256 sem PII, `429` amigável + `Retry-After`) + logs estruturados JSON sem PII.
+> 3. Fallback útil sem LLM e tratamento de `429` direto na bolha em `src/hooks/useAssistantChat.js` (sem bolha vazia) + fix de `CONTACT_KEYWORDS` em `src/components/assistant/ChatPanel.jsx`.
+> 4. Testes unitários/regressão (`assistantFaq.test.js`, `useAssistantChat.test.jsx`, `ChatPanel.test.jsx`).
+>
+> **Acordo técnico:** revisado e aprovado pelo Tech Lead (Claude) sem ressalvas, zero migration necessária.
+>
+> **Responda `"ok"` ou `"autorizo"` para liberar a implementação na branch `feat/issue-35-assistant-hardening`.**
