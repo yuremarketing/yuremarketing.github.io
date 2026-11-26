@@ -26,6 +26,8 @@ export function Portal() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileErrorMsg, setFileErrorMsg] = useState('');
   const [downloadErrorMsg, setDownloadErrorMsg] = useState('');
+  const [attachmentActionMsg, setAttachmentActionMsg] = useState({ text: '', type: '' });
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -238,6 +240,40 @@ export function Portal() {
     }
   };
 
+  const handleDeleteAttachment = async (att) => {
+    if (!window.confirm(`Excluir o anexo "${att.file_name}"? Esta ação não pode ser desfeita.`)) return;
+
+    setAttachmentActionMsg({ text: '', type: '' });
+    setDeletingAttachmentId(att.id);
+    try {
+      const { error: storageError } = await supabase.storage
+        .from('client-assets')
+        .remove([att.file_path]);
+
+      if (storageError) {
+        setAttachmentActionMsg({ text: 'Erro ao excluir o arquivo do armazenamento.', type: 'error' });
+        return;
+      }
+
+      const { error: deleteError } = await supabase
+        .from('client_attachments')
+        .delete()
+        .eq('id', att.id);
+
+      if (deleteError) {
+        setAttachmentActionMsg({ text: 'Arquivo removido, mas houve erro ao atualizar o registro.', type: 'error' });
+        return;
+      }
+
+      setAttachments((prev) => prev.filter((a) => a.id !== att.id));
+      setAttachmentActionMsg({ text: 'Anexo excluído com sucesso.', type: 'success' });
+    } catch (err) {
+      setAttachmentActionMsg({ text: 'Erro inesperado ao excluir o anexo.', type: 'error' });
+    } finally {
+      setDeletingAttachmentId(null);
+    }
+  };
+
   const handleDownloadAttachment = async (path, filename) => {
     setDownloadErrorMsg('');
     const { data, error } = await supabase.storage
@@ -394,6 +430,7 @@ export function Portal() {
                   key={req.id}
                   onClick={() => {
                     setDownloadErrorMsg('');
+                    setAttachmentActionMsg({ text: '', type: '' });
                     setSelectedRequest(req);
                   }}
                   className={`request-item ${selectedRequest?.id === req.id ? 'active' : ''}`}
@@ -430,26 +467,50 @@ export function Portal() {
               </header>
 
               {/* Anexos */}
-              {attachments.length > 0 && (
+              {(attachments.length > 0 || attachmentActionMsg.text) && (
                 <div className="attachments-section">
                   <h3 className="sub-title">Documentos e Briefings Anexados</h3>
-                  <div className="attachments-list">
-                    {attachments.map((att) => (
-                      <div key={att.id} className="attachment-badge">
-                        <span>📎 {att.file_name}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadAttachment(att.file_path, att.file_name)}
-                          className="btn-download"
-                        >
-                          Baixar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  {attachments.length > 0 && (
+                    <div className="attachments-list">
+                      {attachments.map((att) => (
+                        <div key={att.id} className="attachment-badge">
+                          <span>📎 {att.file_name}</span>
+                          <div className="attachment-actions">
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadAttachment(att.file_path, att.file_name)}
+                              className="btn-download"
+                            >
+                              Baixar
+                            </button>
+                            {att.uploaded_by === user.id && (
+                              <button
+                                type="button"
+                                aria-label={`Excluir ${att.file_name}`}
+                                disabled={deletingAttachmentId === att.id}
+                                onClick={() => handleDeleteAttachment(att)}
+                                className="btn-delete"
+                              >
+                                {deletingAttachmentId === att.id ? 'Excluindo...' : 'Excluir'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {downloadErrorMsg && (
                     <div role="alert" className="portal-alert portal-alert-error" style={{ marginTop: '0.6rem' }}>
                       {downloadErrorMsg}
+                    </div>
+                  )}
+                  {attachmentActionMsg.text && (
+                    <div
+                      role={attachmentActionMsg.type === 'error' ? 'alert' : 'status'}
+                      className={`portal-alert ${attachmentActionMsg.type === 'error' ? 'portal-alert-error' : 'portal-alert-success'}`}
+                      style={{ marginTop: '0.6rem' }}
+                    >
+                      {attachmentActionMsg.text}
                     </div>
                   )}
                 </div>
@@ -796,6 +857,12 @@ const portalStyles = `
     background: rgba(255, 255, 255, 0.05);
   }
 
+  .attachment-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
   .btn-download {
     background: transparent;
     border: none;
@@ -804,6 +871,21 @@ const portalStyles = `
     cursor: pointer;
     font-size: 0.8rem;
     text-decoration: underline;
+  }
+
+  .btn-delete {
+    background: transparent;
+    border: none;
+    color: #e55353;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.8rem;
+    text-decoration: underline;
+  }
+
+  .btn-delete:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .messages-box {
