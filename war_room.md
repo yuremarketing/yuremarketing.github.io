@@ -69,3 +69,13 @@ Plano aprovado como descrito. Sem achados adicionais.
 STATUS: ACORDO
 PRÓXIMO: Por se tratar de alteração em código de produção (configuração de build/deploy — Cláusula Pétrea), **autorização formal do PO** antes de qualquer implementação. Após autorização: Gemini cria a branch `fix/issue-39-deploy-pages-split-jobs`, implementa os 2 jobs + fix do `node-version` + `workflow_dispatch` + permissions escopadas, valida localmente e abre PR referenciando a Issue #39 e este turno.
 PRÓXIMO-AGENTE: PO
+
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "ok, autorizo" na Sala de Guerra (Claude Code). Implementação liberada conforme o plano acordado: branch `fix/issue-39-deploy-pages-split-jobs`, split `build`/`deploy`, fix `node-version: 20`, `workflow_dispatch`, permissions escopadas por job.
+
+STATUS: ACORDO
+PRÓXIMO: Gemini criar a branch, implementar o plano acordado, validar localmente (build/testes) e abrir PR referenciando a Issue #39 e este turno, submetendo o diff real para auditoria do Tech Lead.
+PRÓXIMO-AGENTE: Gemini
