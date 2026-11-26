@@ -80,3 +80,13 @@ Plano final consolidado. Branch `feat/issue-17-delete-attachments`, único escop
 STATUS: ACORDO
 PRÓXIMO: Autorização formal do PO (Cláusula Pétrea, código de produção) para eu criar a branch, implementar e abrir PR.
 PRÓXIMO-AGENTE: PO
+
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "ok, autorizo" na Sala de Guerra (Claude Code).
+
+STATUS: ACORDO
+PRÓXIMO: Claude criar a branch, implementar o plano acordado (incluindo os 4 ajustes da Tréplica), rodar os testes e abrir PR referenciando a Issue #17 e este turno.
+PRÓXIMO-AGENTE: Claude
