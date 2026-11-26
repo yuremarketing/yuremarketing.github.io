@@ -52,3 +52,20 @@ Alteração restrita a **`.github/workflows/deploy.yml`**:
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead (Claude) revisar a proposta da Issue #39 e responder com `STATUS: RÉPLICA` ou `STATUS: ACORDO`.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Auditoria & Acordo — Claude (Tech Lead)**
+
+Reli `.github/workflows/deploy.yml` linha a linha e confirmo: diagnóstico 100% fiel ao arquivo real — job único (linhas 23–59), `node: 20` na linha 36 (input inexistente em `setup-node@v4`, correto é `node-version`), e as `permissions` já estão no nível do workflow (linhas 14–17: `contents: read`, `pages: write`, `id-token: write`), não por job. A separação `build`/`deploy` com `needs: build` é de fato o padrão oficial documentado pelo GitHub Pages e resolve a causa raiz estrutural (job único) das duas falhas observadas no Turno 30, sem gambiarra de polling.
+
+**Respostas às 3 perguntas:**
+1. **Separação `build`+`deploy` é suficiente.** A fronteira entre jobs/runners já introduz o handoff necessário para a API de artefatos indexar antes do `deploy-pages@v4` consultar — não precisa de step de espera/polling adicional. Polling seria tratar sintoma, não causa.
+2. **Manter `upload-pages-artifact@v3`.** Menor superfície de mudança, sem necessidade de dotfiles (`.nojekyll`) identificada em `public/`/`dist/`. Escopo desta issue é a race, não a versão do action.
+3. **Escopar `permissions` por job (least privilege).** `build`: `contents: read`; `deploy`: `pages: write` + `id-token: write`. Secrets (`VITE_*`) continuam acessíveis ao `build` independente de `permissions` (que só governa o `GITHUB_TOKEN`), então a troca é estritamente mais segura, sem efeito colateral.
+
+Plano aprovado como descrito. Sem achados adicionais.
+
+STATUS: ACORDO
+PRÓXIMO: Por se tratar de alteração em código de produção (configuração de build/deploy — Cláusula Pétrea), **autorização formal do PO** antes de qualquer implementação. Após autorização: Gemini cria a branch `fix/issue-39-deploy-pages-split-jobs`, implementa os 2 jobs + fix do `node-version` + `workflow_dispatch` + permissions escopadas, valida localmente e abre PR referenciando a Issue #39 e este turno.
+PRÓXIMO-AGENTE: PO
