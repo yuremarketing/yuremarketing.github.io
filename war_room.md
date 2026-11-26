@@ -109,3 +109,39 @@ PRÓXIMO-AGENTE: Claude
 STATUS: PR_ABERTO
 PRÓXIMO: (a) PO cadastrar os 2 secrets no Supabase para eu revalidar a função end-to-end; (b) Tech Lead (Gemini) auditar o diff real do PR #41 (trivial — só remoção) e emitir `ACORDO`.
 PRÓXIMO-AGENTE: Gemini
+
+
+## Gemini
+
+**Auditoria do PR #41 & Acordo — Gemini (Tech Lead)**
+
+Auditei diretamente o **PR #41** (`gh pr view 41` + `gh pr diff 41`, branch `chore/issue-23-remove-setup-linkedin`, commit `eceb5c6`):
+
+1. **Diff real (`0+ / 16-`, 1 arquivo):** apenas remoção de `setup_linkedin.sh` (script obsoleto com Client ID inválido `774nfobuuhqwwj`). Zero referências no repositório fora da documentação da Sala de Guerra; zero impacto em código de aplicação (`src/`), testes ou pipeline de deploy.
+2. **Edge Function `linkedin-oauth-exchange`:** deploy confirmado (`ACTIVE`, `version: 1`, `verify_jwt: false`), e o teste determinístico do Claude cumpriu exatamente o papel de diagnóstico ao confirmar `HTTP 500` pelo guard-clause de `index.ts:58-61` (secrets ausentes no Supabase — nenhum bug de código).
+3. **Sem achados.** PR #41 aprovado para squash merge em `main`.
+
+STATUS: ACORDO
+PRÓXIMO: PO (1) autorizar o squash merge do PR #41 (`Refs #23`) e (2) cadastrar `LINKEDIN_CLIENT_ID` (`77oe3yuh3kord7`) e `LINKEDIN_CLIENT_SECRET` em *Supabase → Edge Functions → Secrets* para que Claude revalide os 3 caminhos determinísticos (`400`/`400`/`502`, sem `500`) e possamos encerrar a Issue #23 após teste real em produção.
+PRÓXIMO-AGENTE: PO
+
+> [!CAUTION]
+> **AUTORIZAÇÃO FORMAL NECESSÁRIA — Cláusula Pétrea (Merge PR #41 + Secrets no Supabase · Issue #23)**
+>
+> ```
+> ╔══════════════════════════════════════════════════════════════════════╗
+> ║   PR #41 — chore/issue-23-remove-setup-linkedin — pronto p/ merge    ║
+> ║   + Ação no Supabase: cadastrar LINKEDIN_CLIENT_ID / CLIENT_SECRET   ║
+> ╚══════════════════════════════════════════════════════════════════════╝
+> ```
+>
+> **O quê:**
+> 1. **Squash merge do PR #41** em `main` — remove `setup_linkedin.sh` (`0+ / 16-`, arquivo obsoleto sem referências).
+> 2. **Cadastro dos secrets no Supabase** (*Edge Functions → Secrets*):
+>    - `LINKEDIN_CLIENT_ID` = `77oe3yuh3kord7`
+>    - `LINKEDIN_CLIENT_SECRET` = *(Client Secret do app `yuremarketing` no LinkedIn Developer Portal)*
+>
+> **Por quê:** a Edge Function `linkedin-oauth-exchange` já está `ACTIVE` (`v1`), mas retornou `HTTP 500` nos 3 testes determinísticos confirmando que os dois secrets ainda não estão cadastrados no Supabase.
+> **Verificado pelo Tech Lead (Gemini):** diff real do PR #41 auditado (`eceb5c6`, `0+ / 16-`), sem regressões nem segredos expostos.
+>
+> **Responda `"ok"` ou `"autorizo"` para liberar o squash merge do PR #41 e avise quando os 2 secrets estiverem cadastrados no Supabase (pode ser na mesma mensagem ou em seguida).**
