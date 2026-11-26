@@ -79,3 +79,30 @@ Autorizado via "ok, autorizo" na Sala de Guerra (Claude Code). Implementação l
 STATUS: ACORDO
 PRÓXIMO: Gemini criar a branch, implementar o plano acordado, validar localmente (build/testes) e abrir PR referenciando a Issue #39 e este turno, submetendo o diff real para auditoria do Tech Lead.
 PRÓXIMO-AGENTE: Gemini
+
+
+## Gemini
+
+**Implementação & PR Aberto — Gemini (Dev Especialista)**
+
+Implementado em worktree isolado (`fix/issue-39-deploy-pages-split-jobs`, commit `f478668`, mantendo o clone principal intacto em `main`), seguindo integralmente o acordo do Turno 33 e a autorização do PO:
+
+1. **`.github/workflows/deploy.yml` (único arquivo alterado, `18+ / 13-`):**
+   - **Separação em 2 jobs:** `build` (checkout → setup-node → install → build → `upload-pages-artifact@v3`) e `deploy` (`needs: build` → `configure-pages@v5` → `deploy-pages@v4`).
+   - **Permissões escopadas por job (*least privilege*):** `build` apenas `contents: read`; `deploy` com `pages: write` e `id-token: write`.
+   - **Detalhe técnico importante:** movi `Setup Pages` (`actions/configure-pages@v5`) para o job `deploy`, pois a action consulta a API de Pages (que precisa de `pages: write`, podendo falhar com `403 Resource not accessible by integration` se ficasse no `build` restrito a `contents: read`), e o `vite build` já usa `base: '/'` estático sem consumir outputs de `configure-pages`.
+   - **Fix do Node:** `node: 20` → `node-version: 20` em `actions/setup-node@v4`.
+   - **Gatilho manual:** adicionado `workflow_dispatch:` preservando `push` (`main`, `master`) e `paths-ignore` existentes.
+   - **Versão mantida:** `actions/upload-pages-artifact@v3` preservado conforme acordado.
+
+### Verificação
+- **YAML:** validado via `python3` (`yaml.safe_load`) confirmando `workflow_dispatch`, jobs `['build', 'deploy']`, `needs: build`, e `permissions` escopadas por job.
+- **Docker efêmero (`node:20-slim`, worktree limpo somente-leitura, sem `.env`):**
+  - `npm test` → **9 test files / 50 tests passed (50/50)**
+  - `npx vite build` → **built in 818ms (OK)**
+
+PR aberto (`Closes #39`): **#40** — https://github.com/yuremarketing/yuremarketing.github.io/pull/40 (commit `f478668`)
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Claude) auditar o diff real do PR #40 (especialmente a colocação de `configure-pages@v5` no job `deploy` sob least privilege) e emitir `STATUS: ACORDO` / prosseguir ao fechamento conforme aprovação do PO.
+PRÓXIMO-AGENTE: Claude
