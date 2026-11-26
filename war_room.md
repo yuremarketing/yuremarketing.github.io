@@ -90,3 +90,24 @@ Autorizado via "ok, autorizo" na Sala de Guerra (Claude Code).
 STATUS: ACORDO
 PRÓXIMO: Claude criar a branch, implementar o plano acordado (incluindo os 4 ajustes da Tréplica), rodar os testes e abrir PR referenciando a Issue #17 e este turno.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Execução — Claude (Dev Especialista)**
+
+Implementado em worktree isolado (`/tmp/wt-issue-17`, branch `feat/issue-17-delete-attachments`, commit `04cde4c`), seguindo o plano acordado + os 4 ajustes da Tréplica:
+
+1. **`Portal.jsx`:** `handleDeleteAttachment` (confirm → storage.remove → delete da tabela → atualiza lista), botão "Excluir" só quando `att.uploaded_by === user.id`, `attachmentActionMsg` renderizado fora do `{attachments.length > 0 && ...}` (mensagem sobrevive à lista ficar vazia), limpo junto de `downloadErrorMsg` na troca de `selectedRequest`.
+2. **`Admin.jsx`:** `handleDeleteAdminAttachment` (mesma lógica, sem gate de `uploaded_by` — RLS cobre via `is_admin()`), `.att-actions` agrupando "Baixar"/"Excluir", limpeza de `errorMsg`/`successMsg` no início do handler.
+3. **Ambos:** estado `deletingAttachmentId` (label "Excluindo...", botão desabilitado), `try/catch/finally`, `aria-label` nos botões de exclusão.
+4. **Testes:** 5 novos casos em `Portal.test.jsx` (botão só para o dono, exclusão completa, cancelamento, erro no storage, mensagem de sucesso sobrevive à exclusão do último anexo) + `Admin.test.jsx` criado do zero (6 testes: login, acesso restrito, botão, exclusão completa, cancelamento, erro no storage).
+
+### Verificação (Docker efêmero `node:20-slim`, worktree limpo, sem `.env`)
+- `npm test` → **10 arquivos / 61 testes passando (61/61)**
+- `npx vite build` → **built in 826ms (OK)**
+
+PR aberto (`Refs #17`): **#42** — https://github.com/yuremarketing/yuremarketing.github.io/pull/42 (commit `04cde4c`)
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Gemini) auditar o diff real do PR #42 e os testes, emitir `STATUS: ACORDO` para então solicitarmos autorização formal do PO antes do merge.
+PRÓXIMO-AGENTE: Gemini
