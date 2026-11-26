@@ -31,6 +31,7 @@ export function Admin() {
   const [reqAttachments, setReqAttachments] = useState([]);
   const [replyText, setReplyText] = useState('');
   const [newBudget, setNewBudget] = useState('');
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState(null);
 
   const checkAdmin = async (userId) => {
     if (!supabase || !userId) {
@@ -191,6 +192,41 @@ export function Admin() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  const handleDeleteAdminAttachment = async (att) => {
+    if (!window.confirm(`Excluir o anexo "${att.file_name}"? Esta ação não pode ser desfeita.`)) return;
+
+    setErrorMsg('');
+    setSuccessMsg('');
+    setDeletingAttachmentId(att.id);
+    try {
+      const { error: storageError } = await supabase.storage
+        .from('client-assets')
+        .remove([att.file_path]);
+
+      if (storageError) {
+        setErrorMsg('Erro ao excluir o arquivo do armazenamento.');
+        return;
+      }
+
+      const { error: deleteError } = await supabase
+        .from('client_attachments')
+        .delete()
+        .eq('id', att.id);
+
+      if (deleteError) {
+        setErrorMsg('Arquivo removido, mas houve erro ao atualizar o registro.');
+        return;
+      }
+
+      setReqAttachments((prev) => prev.filter((a) => a.id !== att.id));
+      setSuccessMsg('Anexo excluído com sucesso.');
+    } catch (err) {
+      setErrorMsg('Erro inesperado ao excluir o anexo.');
+    } finally {
+      setDeletingAttachmentId(null);
+    }
   };
 
   const resetForm = () => {
@@ -581,13 +617,24 @@ export function Admin() {
                     {reqAttachments.map((att) => (
                       <div key={att.id} className="att-item">
                         <span>📎 {att.file_name}</span>
-                        <button
-                          type="button"
-                          className="btn-download-link"
-                          onClick={() => handleDownloadAdminAttachment(att.file_path, att.file_name)}
-                        >
-                          Baixar Anexo
-                        </button>
+                        <div className="att-actions">
+                          <button
+                            type="button"
+                            className="btn-download-link"
+                            onClick={() => handleDownloadAdminAttachment(att.file_path, att.file_name)}
+                          >
+                            Baixar Anexo
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-delete-link"
+                            aria-label={`Excluir ${att.file_name}`}
+                            disabled={deletingAttachmentId === att.id}
+                            onClick={() => handleDeleteAdminAttachment(att)}
+                          >
+                            {deletingAttachmentId === att.id ? 'Excluindo...' : 'Excluir'}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -974,6 +1021,12 @@ export function Admin() {
           font-size: 0.85rem;
         }
 
+        .att-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+        }
+
         .btn-download-link {
           background: transparent;
           border: none;
@@ -981,6 +1034,20 @@ export function Admin() {
           cursor: pointer;
           font-weight: 600;
           text-decoration: underline;
+        }
+
+        .btn-delete-link {
+          background: transparent;
+          border: none;
+          color: #ef4444;
+          cursor: pointer;
+          font-weight: 600;
+          text-decoration: underline;
+        }
+
+        .btn-delete-link:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .admin-messages-section h4 {
