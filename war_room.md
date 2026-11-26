@@ -179,3 +179,42 @@ PR aberto (`Refs #35`): **#43** — https://github.com/yuremarketing/yuremarketi
 STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) auditar o diff real do PR #43 e os testes, emitir `STATUS: ACORDO` e solicitar autorização formal do PO para squash merge + reimplantação da Edge Function `assistant-chat` no Supabase.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Auditoria & ACORDO — Claude (Tech Lead)**
+
+Auditei o diff real do PR #43 (`gh pr diff 43`, commit `a3d5639`, 7 arquivos, +623/-20) linha a linha, não apenas o relato do Gemini:
+
+1. **`useAssistantChat.js`:** confirmado — `response.status === 429` checado *antes* do guarda genérico `!response.ok || !response.body` (como pedido na Réplica); fallback (`429` e offline) preenche a última bolha via `setLastAssistantContent` com `setError(null)`, sem duplicar em `error`; FAQ client-side (`matchAssistantFaq`) retorna antes de qualquer `fetch`; `sessionId` efêmero via `useRef`, nunca persistido. Adição extra não pedida mas correta: trata stream vazio (`!assistantText.trim()`) também com `buildOfflineFallback`.
+2. **`ChatPanel.jsx`:** bug do `CONTACT_KEYWORDS` corrigido corretamente — `lastUserQuestion` (já calculado, reaproveitado) move para dependência do `useEffect`, substituindo o check morto em `messages[messages.length-1]`. Teste de regressão cobre o fluxo completo (abre form, fecha com "Agora não", novo envio sem keyword não reabre).
+3. **`assistant-chat/index.ts`:** rate limit in-memory confirmado sem migration — sliding window por `keyHash` (SHA-256 truncado de IP ou `sessionId`, zero PII), checagem de janela hora+minuto, eviction com teto de `1000` chaves, resposta `429` com `Retry-After` + `code: RATE_LIMITED`, logs estruturados (`rate_limited`/`llm_success`/`llm_all_failed`) sem conteúdo de conversa. Lógica de janelas sem off-by-one perceptível; rate limit roda antes da validação de `messages` (correto, evita custo em payloads invá lidos).
+4. **`assistantFaq.js`:** regexes conservadoras corretas — `STACK_REGEX` exclui `\bprojeto\b` para não sequestrar perguntas específicas; `MAX_FAQ_LENGTH=140` aplicado; `buildOfflineFallback` reaproveita FAQ em modo relaxado antes do fallback genérico.
+
+**Validação independente (não só confiei no relato do Gemini — sem CI configurado no repo, roda só o `deploy.yml` em push a `main`):**
+- Checkout do commit `a3d5639` em worktree isolado (`/tmp/wt-issue-35-audit`, descartado ao final).
+- Docker efêmero `node:20-slim`, mount `:ro`, sem `.env`: `npm ci` + `npm test -- --run` → **13 arquivos / 74 testes passando (74/74)**, idêntico ao relato. `npx vite build` → **built in 808ms (OK)**.
+- Extra: `deno check index.ts` (Deno oficial, container `denoland/deno:latest`) na Edge Function → **sem erros de tipo**.
+
+Nenhuma divergência. Diff bate exatamente com o acordo técnico do Turno. Aprovo sem ressalvas.
+
+STATUS: ACORDO
+PRÓXIMO: Autorização formal do PO (Cláusula Pétrea — squash merge de código de produção + reimplantação da Edge Function `assistant-chat` no Supabase).
+PRÓXIMO-AGENTE: PO
+
+> [!CAUTION]
+> **AUTORIZAÇÃO FORMAL NECESSÁRIA — Cláusula Pétrea (Código de Produção · Issue #35 · Turno 36)**
+>
+> ```
+> ╔══════════════════════════════════════════════════════════════════════╗
+> ║   PR #43 auditado e aprovado — squash merge + deploy pendente        ║
+> ╚══════════════════════════════════════════════════════════════════════╝
+> ```
+>
+> **O quê:** squash merge do PR #43 (`feat/issue-35-assistant-hardening` → `main`) + reimplantação manual da Edge Function `assistant-chat` no Supabase (único jeito de ativar o rate limiting e os logs em produção — o `deploy.yml` só publica o front-end estático no GitHub Pages).
+>
+> **Por quê:** Issue #35 — FAQ sem LLM, rate limiting (`8/min` · `30/h`, hash sem PII) e fallback útil no assistente do portfólio.
+>
+> **Validação:** diff auditado linha a linha pelo Tech Lead (Claude); 74/74 testes + build + `deno check` confirmados de forma independente em container efêmero, sem usar `.env`.
+>
+> **Responda `"ok"` ou `"autorizo"` para liberar o squash merge e o redeploy da Edge Function.**
