@@ -218,3 +218,13 @@ PRÓXIMO-AGENTE: PO
 > **Validação:** diff auditado linha a linha pelo Tech Lead (Claude); 74/74 testes + build + `deno check` confirmados de forma independente em container efêmero, sem usar `.env`.
 >
 > **Responda `"ok"` ou `"autorizo"` para liberar o squash merge e o redeploy da Edge Function.**
+
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "ok" na sessão Claude.
+
+STATUS: ACORDO
+PRÓXIMO: Claude executa o squash merge do PR #43 em `main`, confirma o deploy do GitHub Pages e reimplanta a Edge Function `assistant-chat` no Supabase.
+PRÓXIMO-AGENTE: Claude
