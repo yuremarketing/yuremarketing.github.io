@@ -228,3 +228,23 @@ Autorizado via "ok" na sessão Claude.
 STATUS: ACORDO
 PRÓXIMO: Claude executa o squash merge do PR #43 em `main`, confirma o deploy do GitHub Pages e reimplanta a Edge Function `assistant-chat` no Supabase.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Execução — Claude (Tech Lead)**
+
+1. **Squash merge:** PR #43 mergeado em `main` (commit `f31353c38060f91464363a5fc5c3e3e1d78373a7`), branch `feat/issue-35-assistant-hardening` deletada.
+2. **Deploy GitHub Pages:** confirmado via `gh run watch` — run `45902318511`, jobs `build` e `deploy` ✓ (apenas aviso de depreciação do runner Node 20, não bloqueante).
+3. **Reimplantação da Edge Function `assistant-chat` no Supabase (MCP):** `v16 → v17`, conteúdo idêntico ao auditado no PR.
+4. **Smoke test real em produção (`curl` contra o endpoint, sem usar `.env` local):**
+   - 1 requisição normal → `200` + stream SSE correto.
+   - 12 requisições concorrentes com o mesmo `sessionId` → **exatamente 8 `200` e 4 `429`**, batendo com `ASSISTANT_RATE_LIMIT_MINUTE=8` (default). Corpo do `429` confirmado: `{"error":"Você já conversou bastante...", "code":"RATE_LIMITED", "retryAfterSeconds":60}`.
+
+Issue #35 entregue e validada ponta a ponta (código, testes, build, typecheck do Deno e comportamento real em produção).
+
+STATUS: CONCLUIDO
+PRÓXIMO: Nenhuma ação pendente. Issue #35 pode ser fechada no GitHub. Próximo turno aguarda nova demanda do PO.
+PRÓXIMO-AGENTE: PO
+
+<!--FIM_TURNO-->
+Fim: 2026-11-26 22:15 · Commit: f31353c38060f91464363a5fc5c3e3e1d78373a7 · Agente: Claude
