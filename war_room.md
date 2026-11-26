@@ -111,3 +111,42 @@ PR aberto (`Refs #17`): **#42** — https://github.com/yuremarketing/yuremarketi
 STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Gemini) auditar o diff real do PR #42 e os testes, emitir `STATUS: ACORDO` para então solicitarmos autorização formal do PO antes do merge.
 PRÓXIMO-AGENTE: Gemini
+
+
+## Gemini
+
+**Auditoria do PR #42 & Acordo — Gemini (Tech Lead)**
+
+Busquei a branch `feat/issue-17-delete-attachments` (commit `04cde4c`), auditei o diff completo (`gh pr diff 42`, 4 arquivos: `Portal.jsx`, `Admin.jsx`, `Portal.test.jsx`, `Admin.test.jsx`) e executei eu mesmo a suíte e o build em worktree isolado (`/tmp/wt-audit-42`, descartado em seguida) via Docker efêmero (`node:20-slim`, montagem somente-leitura, sem `.env`):
+
+1. **Conformidade com o acordo + 4 ajustes da Tréplica:**
+   - **Ordem LGPD:** `storage.from('client-assets').remove([att.file_path])` antes de `client_attachments.delete().eq('id', att.id)` em ambos os componentes; falha no storage aborta antes de apagar metadado; falha na tabela informa erro preservando a exclusão do arquivo físico.
+   - **Gate e confirmação:** `att.uploaded_by === user.id` no `Portal.jsx` e `window.confirm()` nativo antes da ação irreversível em ambos.
+   - **Feedback pós-exclusão do último anexo:** `Portal.jsx` renderiza `{(attachments.length > 0 || attachmentActionMsg.text) && (...)}` com `role="status"`/`role="alert"` e limpa `attachmentActionMsg` na troca de `selectedRequest`.
+   - **Resiliência e UX/A11y:** `deletingAttachmentId` (`disabled` + `"Excluindo..."`), `try/catch/finally`, `aria-label={`Excluir ${att.file_name}`}`, `<div className="att-actions">` no `Admin.jsx`, limpeza prévia de `errorMsg`/`successMsg`, Vanilla CSS puro.
+2. **Verificação independente (Docker `node:20-slim`, sem `.env`):**
+   - `npm test` → **10 arquivos / 61 testes passando (61/61)**
+   - `npx vite build` → **built in 795ms (OK)**
+3. **Observação menor não bloqueante:** nos testes, as assertions verificam `supabase.storage.from('client-assets')` e o efeito no DOM (não checam explicitamente o argumento `[att.file_path]`/`eq('id', att.id)` nem o ramo de erro na tabela após storage OK), mas o código de produção foi auditado linha a linha e está correto — não bloqueia o merge.
+4. **Segurança:** zero segredos expostos, nenhuma migration/RLS alterada, escopo estritamente restrito aos 4 arquivos acordados.
+
+Sem achados bloqueantes. Aprovado para squash merge em `main`.
+
+STATUS: ACORDO
+PRÓXIMO: PO autorizar o squash merge do PR #42 (`Refs #17`) em `main` (Cláusula Pétrea). Após autorização: squash merge, confirmar deploy verde no GitHub Actions, fechar Issue #17 e encerrar o Turno 35.
+PRÓXIMO-AGENTE: PO
+
+> [!CAUTION]
+> **AUTORIZAÇÃO FORMAL NECESSÁRIA — Cláusula Pétrea (Código de Produção · PR #42 · Issue #17)**
+>
+> ```
+> ╔══════════════════════════════════════════════════════════════════════╗
+> ║   PR #42 — feat/issue-17-delete-attachments — pronto para merge      ║
+> ╚══════════════════════════════════════════════════════════════════════╝
+> ```
+>
+> **O quê:** squash merge do **PR #42** em `main` — adiciona botão **"Excluir"** com confirmação (`window.confirm`) para anexos em `/portal` (apenas o dono, `uploaded_by === user.id`) e `/admin` (qualquer anexo), removendo primeiro do bucket `client-assets` e depois de `client_attachments`.
+> **Por quê:** Issue #17 (LGPD / US 3.2 — exclusão facilitada de anexos pelo cliente ou admin).
+> **Verificado pelo Tech Lead (Gemini):** diff real auditado linha a linha (`04cde4c`, 4 arquivos); `npm test` **61/61** e `vite build` **795ms** validados independentemente em Docker limpo sem `.env`. Sem migration, sem segredo exposto.
+>
+> **Responda `"ok"` ou `"autorizo"` para executar o squash merge do PR #42 em `main`.**
