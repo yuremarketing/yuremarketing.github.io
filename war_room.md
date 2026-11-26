@@ -157,3 +157,25 @@ Autorizado via "ok" na sessão Antigravity/Gemini.
 STATUS: ACORDO
 PRÓXIMO: Gemini criar a branch `feat/issue-35-assistant-hardening`, implementar o plano consolidado, validar testes/build em Docker e abrir PR referenciando a Issue #35 e este turno.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Execução — Gemini (Dev Especialista)**
+
+Implementado em worktree isolado (`/tmp/wt-issue-35`, já removido; branch `feat/issue-35-assistant-hardening`, commit `a3d5639`), seguindo o plano consolidado + os 3 pontos da Réplica:
+
+1. **`src/lib/assistantFaq.js` (novo):** normalização com remoção de acentos/pontuação, match conservador (`<= 140` chars) cobrindo contato, stack (delegando perguntas de projeto específico para a LLM), saudação, resumo sobre o Yure e LGPD, sem sequestrar perguntas abertas (`"Quais projetos ele já lançou?"`). Helper `buildOfflineFallback(text)` com fallback útil contendo os canais homologados (`+55 61 99408-5093`, `yure.mark@gmail.com`, LinkedIn, GitHub).
+2. **`src/hooks/useAssistantChat.js`:** consulta `matchAssistantFaq(trimmed)` antes de qualquer `fetch` (0 chamadas HTTP/tokens); gera `sessionId` efêmero em `useRef`; checa `response.status === 429` *antes* de `!response.ok || !response.body`; preenche a bolha do assistente com a mensagem amigável do servidor (`429`) ou com `buildOfflineFallback` (`502`/timeout/rede/stream vazio) mantendo `setError(null)` — sem bolha vazia; `reset()` segue cancelando sem acionar fallback.
+3. **`src/components/assistant/ChatPanel.jsx`:** bug de `CONTACT_KEYWORDS` corrigido reutilizando `lastUserQuestion` no `useEffect` (abre `ContactCapture` corretamente e não reabre após o usuário clicar em `"Agora não"`).
+4. **`supabase/functions/assistant-chat/index.ts`:** sliding window in-memory (`8/min`, `30/h`, configuráveis via `ASSISTANT_RATE_LIMIT_MINUTE` / `ASSISTANT_RATE_LIMIT_HOUR`), chave em hash SHA-256 truncado (16 hex chars, IP real com fallback `sessionId`, zero PII), pruning + teto `MAX_TRACKED_KEYS = 1000`, resposta `429` com `Retry-After` + JSON `{ code: "RATE_LIMITED", error, retryAfterSeconds }` e logs estruturados JSON sem PII (`rate_limited`, `llm_success`, `llm_all_failed`).
+5. **Testes novos:** `src/lib/assistantFaq.test.js` (6 casos), `src/hooks/useAssistantChat.test.jsx` (5 casos) e `src/components/assistant/ChatPanel.test.jsx` (2 casos, incluindo regressão de `CONTACT_KEYWORDS`).
+
+### Verificação (Docker efêmero `node:20-slim`, montagem somente-leitura, sem `.env`)
+- `npm test` → **13 arquivos / 74 testes passando (74/74)**
+- `npx vite build` → **built in 862ms (OK)**
+
+PR aberto (`Refs #35`): **#43** — https://github.com/yuremarketing/yuremarketing.github.io/pull/43 (commit `a3d5639`)
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Claude) auditar o diff real do PR #43 e os testes, emitir `STATUS: ACORDO` e solicitar autorização formal do PO para squash merge + reimplantação da Edge Function `assistant-chat` no Supabase.
+PRÓXIMO-AGENTE: Claude
