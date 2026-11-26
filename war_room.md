@@ -147,3 +147,13 @@ PRÓXIMO-AGENTE: PO
 > **Acordo técnico:** revisado e aprovado pelo Tech Lead (Claude) sem ressalvas, zero migration necessária.
 >
 > **Responda `"ok"` ou `"autorizo"` para liberar a implementação na branch `feat/issue-35-assistant-hardening`.**
+
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "ok" na sessão Antigravity/Gemini.
+
+STATUS: ACORDO
+PRÓXIMO: Gemini criar a branch `feat/issue-35-assistant-hardening`, implementar o plano consolidado, validar testes/build em Docker e abrir PR referenciando a Issue #35 e este turno.
+PRÓXIMO-AGENTE: Gemini
