@@ -35,3 +35,44 @@ Assumo a **Issue #23** (*Falha na autenticação OAuth do LinkedIn: Client ID in
 STATUS: PROPOSTA
 PRÓXIMO: Tech Lead (Gemini) revisar o diagnóstico e responder às 2 perguntas (status dos secrets no Supabase — se souber — e se a remoção do `setup_linkedin.sh` entra neste turno).
 PRÓXIMO-AGENTE: Gemini
+
+
+## Gemini
+
+**Auditoria & Acordo — Gemini (Tech Lead)**
+
+Auditei diretamente os arquivos reais em `main` (`supabase/functions/linkedin-oauth-exchange/index.ts`, `src/pages/About.jsx`, `src/pages/Callback.jsx`, `setup_linkedin.sh`) e os comentários da **Issue #23**:
+
+1. **Código pronto e íntegro em `main`:**
+   - `About.jsx` (linhas 11–12, 80–89) já valida `VITE_LINKEDIN_CLIENT_ID` sem fallback hardcoded e usa `crypto.randomUUID()` + `sessionStorage` para `state`.
+   - `Callback.jsx` consome `state` uma única vez (`removeItem` imediato), tem `handledRef` contra duplo disparo em `StrictMode` e chama `EXCHANGE_URL` enviando `Authorization: Bearer ${ANON_KEY}` + `apikey: ANON_KEY`.
+   - `supabase/functions/linkedin-oauth-exchange/index.ts` (146 linhas) mantém allowlist estrita de `redirect_uri`, lê `LINKEDIN_CLIENT_ID`/`LINKEDIN_CLIENT_SECRET` via `Deno.env.get(...)` e devolve apenas `{ name, email, picture }` (com guarda `https://` em `picture`), nunca expondo `access_token` ou secrets.
+   - **Confirmação técnica sobre `verify_jwt: false`:** correto e **obrigatório** — o projeto usa chave publicável (`sb_publishable_...`) como `VITE_SUPABASE_ANON_KEY`, que não é JWT; com `verify_jwt: true` o gateway rejeitaria a chamada do `Callback.jsx` com 401.
+2. **Respostas às 2 perguntas:**
+   - **Q1 (Secrets no Supabase):** também não tenho acesso de leitura aos secrets de Edge Functions do Supabase — precisa de confirmação explícita do PO de que `LINKEDIN_CLIENT_ID` (`77oe3yuh3kord7`) e `LINKEDIN_CLIENT_SECRET` já estão cadastrados em *Edge Functions → Secrets* no projeto Supabase (se ainda não estiverem, configurar antes da validação para que os testes determinísticos de `code`/`redirect_uri` inválidos retornem `400` e não `500` de secret ausente).
+   - **Q2 (`setup_linkedin.sh`):** **sim, pode remover neste turno.** Confirmei via `grep` em todo o repositório: **zero referências** fora de `war_room.md`/`HISTORICO.md`; o script só contém o Client ID antigo/inválido (`774nfobuuhqwwj`) e escreve em `.env` local (fluxo obsoleto). **Ressalva obrigatória de processo (Seção 5):** a remoção de `setup_linkedin.sh` deve passar por **branch + PR** (ex.: `chore/issue-23-remove-setup-linkedin`, `Refs #23`), nunca commit direto em `main`, e auditarei o PR antes do squash merge.
+
+Plano aprovado. Sem achados adicionais.
+
+STATUS: ACORDO
+PRÓXIMO: Autorização formal do PO (Cláusula Pétrea) + confirmação dos secrets no Supabase para Claude implantar `linkedin-oauth-exchange` (`verify_jwt: false`), validar os caminhos determinísticos e abrir PR removendo `setup_linkedin.sh`.
+PRÓXIMO-AGENTE: PO
+
+> [!CAUTION]
+> **AUTORIZAÇÃO FORMAL NECESSÁRIA — Cláusula Pétrea (backend de produção + remoção de script)**
+>
+> ```
+> ╔══════════════════════════════════════════════════════════════════════╗
+> ║   TURNO 34 — Issue #23 — Deploy Edge Function linkedin-oauth-exchange║
+> ╚══════════════════════════════════════════════════════════════════════╝
+> ```
+>
+> **O quê:**
+> 1. Implantar a Edge Function `linkedin-oauth-exchange` em produção no Supabase (`verify_jwt: false`, código já auditado em `main`, zero linhas novas).
+> 2. Abrir PR removendo o script obsoleto `setup_linkedin.sh` (Client ID antigo `774nfobuuhqwwj`, sem referências no repo).
+>
+> **Pré-requisito a confirmar pelo PO:** os secrets `LINKEDIN_CLIENT_ID` (`77oe3yuh3kord7`) e `LINKEDIN_CLIENT_SECRET` já estão configurados em **Supabase → Edge Functions → Secrets**?
+>
+> **Verificado pelo Tech Lead (Gemini):** `index.ts`, `About.jsx`, `Callback.jsx` auditados linha a linha; zero referências a `setup_linkedin.sh`; `verify_jwt: false` validado para compatibilidade com chave `sb_publishable_...`.
+>
+> **Responda "ok" ou "autorizo" (e confirme se os secrets já estão no Supabase) para liberar a execução pelo Claude.**
