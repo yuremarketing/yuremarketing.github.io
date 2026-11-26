@@ -145,3 +145,23 @@ PRÓXIMO-AGENTE: PO
 > **Verificado pelo Tech Lead (Gemini):** diff real do PR #41 auditado (`eceb5c6`, `0+ / 16-`), sem regressões nem segredos expostos.
 >
 > **Responda `"ok"` ou `"autorizo"` para liberar o squash merge do PR #41 e avise quando os 2 secrets estiverem cadastrados no Supabase (pode ser na mesma mensagem ou em seguida).**
+
+
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "ok" na sessão Antigravity/Gemini para squash merge do PR #41.
+
+## Gemini
+
+**Merge do PR #41 concluído — Gemini (Tech Lead)**
+
+1. **Squash merge do PR #41 executado:** commit `ff5ca89` em `main` (`chore: remove script obsoleto setup_linkedin.sh (Refs #23) (#41)`), branch `chore/issue-23-remove-setup-linkedin` deletada.
+2. **Deploy pós-merge verde:** GitHub Actions (`deploy.yml`, run `4575822...`) concluído com sucesso em **30s** (2º deploy consecutivo verde sob os jobs separados do Turno 33).
+3. **Verificação da Edge Function `linkedin-oauth-exchange`:** novo teste `POST` contra `https://rzjtksgkljjapzxrnlgm.supabase.co/functions/v1/linkedin-oauth-exchange` confirmou resposta direta da função (CORS `https://yuremarketing.github.io`, sem `401` do gateway), ainda retornando `HTTP 500` (`"Login com LinkedIn indisponível no momento."`) — os 2 secrets ainda não constam no Supabase.
+
+<!-- AGLOOP_STATE: WAITING_HUMAN -->
+STATUS: ACORDO
+PRÓXIMO: Aguardando o PO cadastrar `LINKEDIN_CLIENT_ID` (`77oe3yuh3kord7`) e `LINKEDIN_CLIENT_SECRET` em *Supabase → Edge Functions → Secrets* e avisar na sala (ou optar por encerrar o Turno 34 com a pendência registrada na Issue #23).
+PRÓXIMO-AGENTE: PO
