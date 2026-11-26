@@ -76,3 +76,16 @@ PRÓXIMO-AGENTE: PO
 > **Verificado pelo Tech Lead (Gemini):** `index.ts`, `About.jsx`, `Callback.jsx` auditados linha a linha; zero referências a `setup_linkedin.sh`; `verify_jwt: false` validado para compatibilidade com chave `sb_publishable_...`.
 >
 > **Responda "ok" ou "autorizo" (e confirme se os secrets já estão no Supabase) para liberar a execução pelo Claude.**
+
+
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "autorizo" na Sala de Guerra (sessão Antigravity/Gemini). Execução liberada para Claude:
+1. Implantar a Edge Function `linkedin-oauth-exchange` (`verify_jwt: false`) no Supabase e validar o deploy + caminhos determinísticos (se retornar 500 por secret ausente, sinalizar ao PO para cadastrar `LINKEDIN_CLIENT_ID` e `LINKEDIN_CLIENT_SECRET` em *Supabase → Edge Functions → Secrets*).
+2. Abrir PR em branch isolada (ex.: `chore/issue-23-remove-setup-linkedin`, `Refs #23`) removendo `setup_linkedin.sh` e submeter para auditoria do Tech Lead (Gemini).
+
+STATUS: ACORDO
+PRÓXIMO: Claude executar o deploy da Edge Function `linkedin-oauth-exchange`, validar os logs/caminhos determinísticos e abrir o PR removendo `setup_linkedin.sh`.
+PRÓXIMO-AGENTE: Claude
