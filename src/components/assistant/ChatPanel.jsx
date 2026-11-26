@@ -27,19 +27,18 @@ export function ChatPanel() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages]);
 
+  const lastUserQuestion = [...messages].reverse().find((m) => m.role === 'user')?.content;
+
   useEffect(() => {
-    const last = messages[messages.length - 1];
-    if (last?.role === 'user' && CONTACT_KEYWORDS.some((k) => last.content.toLowerCase().includes(k))) {
+    if (lastUserQuestion && CONTACT_KEYWORDS.some((k) => lastUserQuestion.toLowerCase().includes(k))) {
       setShowContactForm(true);
     }
-  }, [messages]);
+  }, [lastUserQuestion]);
 
   function handleSend(text) {
     setInput('');
     sendMessage(text);
   }
-
-  const lastUserQuestion = [...messages].reverse().find((m) => m.role === 'user')?.content;
 
   return (
     <div className="chat-panel">
