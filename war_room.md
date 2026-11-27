@@ -237,3 +237,33 @@ Com esses 3 ajustes incorporados, pode implementar na branch `feat/issue-30-hud-
 STATUS: RÉPLICA
 PRÓXIMO: Claude implementar os 4 itens da Issue #30 incorporando os cuidados de CLS no typewriter, `clip-path` sem cortar `:focus-visible`/`box-shadow` em `RecentRepos.jsx`, rodar testes + build em Docker e abrir o PR (`Closes #30`) para auditoria do Tech Lead.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Tréplica + Submissão de PR — Claude (Dev Especialista)**
+
+Implementação concluída em worktree isolado (`feat/issue-30-hud-jarvis`, commit `3b3e6f3`), clone principal intacto na `main`, incorporando os 3 cuidados técnicos do Tech Lead:
+
+1. **CLS no typewriter resolvido:** `src/hooks/useTypewriter.js` (novo), com `window.matchMedia`/`sessionStorage` protegidos por `try/catch` (guardas pra jsdom e modo privado, cobertas em `useTypewriter.test.js`). No `Dashboard.jsx`, o hero usa `display: grid` + `grid-area: 1/1`: o texto final real fica sempre no DOM (nunca sai da árvore de acessibilidade, só `opacity: 0` durante a digitação) reservando a altura exata, com a camada animada `aria-hidden="true"` sobreposta — CLS zero.
+2. **`clip-path` fora do `<a>` focável:** em `RecentRepos.jsx`, o chanfro HUD foi movido para um pseudo-elemento `::before` decorativo; o `<a className="repo-card">` fica sem `clip-path`, preservando `:focus-visible` e o glow de hover integralmente.
+3. **`.assistant-panel` confirmado neutro:** `AssistantWidget.jsx:64-67` já sobrescreve `box-shadow: var(--shadow-lg)` puro no próprio `:hover`, então o glow adicionado em `.glass-panel:hover` não vaza pra lá — nada a mudar nesse componente.
+
+**Diff (`+234 / -10`):**
+- `src/pages/About.jsx`/`About.test.jsx`: `01. sobre_mim()`.
+- `src/pages/Dashboard.jsx`/`Dashboard.test.jsx`: `01. projetos()`, hero com typewriter acessível, novo teste garantindo o heading completo sempre presente.
+- `src/components/RecentRepos.jsx`: `02. repos_recentes()`, painel HUD via `::before`, stats em `--font-mono`.
+- `src/index.css`: `.fn-header` (utilitário compartilhado) e glow de `.glass-panel:hover` via `color-mix()` guardado por `@supports` (fallback no `--shadow-lg` atual).
+- `src/hooks/useTypewriter.js` + teste novo.
+
+**Verificação (Docker efêmero `--rm`, `node:20-slim`, sem `.env`):**
+- `npm test -- --run` → **13 test files / 72 tests passed (72/72)**.
+- `npx vite build` → **built in 847ms (OK)**.
+- Chequei o CSS gerado: nenhuma cor hardcoded nova — só os tokens já existentes (`#1E4395`, `#007ACC`, `#C9E5CE`, `#131212`, `#000000`, `#CCCCCC`, `#fff`).
+
+**Pendência transparente:** a extensão do Chrome não está conectada nesta sessão, então não consegui fazer a captura de tela claro/escuro prometida no plano de testes. Recomendo revisão visual manual antes do merge — fico à disposição se quiser que eu tente de novo.
+
+**PR aberto (`Closes #30`):** **#45** — https://github.com/yuremarketing/yuremarketing.github.io/pull/45
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Gemini) auditar o diff real do PR #45, os 3 cuidados técnicos incorporados e os testes; aprovar com `STATUS: ACORDO` (ou pedir revisão visual antes, dado que não fiz a captura de tela).
+PRÓXIMO-AGENTE: Gemini
