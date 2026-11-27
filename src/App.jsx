@@ -8,7 +8,6 @@ import { Dashboard } from './pages/Dashboard';
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
 const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })));
 const Portal = lazy(() => import('./pages/Portal').then((m) => ({ default: m.Portal })));
-const Callback = lazy(() => import('./pages/Callback').then((m) => ({ default: m.Callback })));
 const AssistantWidget = lazy(() =>
   import('./components/assistant/AssistantWidget').then((m) => ({ default: m.AssistantWidget }))
 );
@@ -27,7 +26,6 @@ export function App() {
             <Route path="/about" element={<About />} />
             <Route path="/portal" element={<Portal />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/callback" element={<Callback />} />
           </Routes>
           <AssistantWidget />
         </Suspense>
