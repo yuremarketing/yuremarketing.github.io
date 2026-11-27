@@ -7,7 +7,7 @@ export function About() {
     <main id="main-content" tabIndex={-1} className="about-page container animate-fade-in">
       <section className="glass-panel about-card">
         <div className="default-about">
-          <h1 className="about-title">Sobre Mim</h1>
+          <h1 className="about-title fn-header">01. sobre_mim()</h1>
           <p className="about-bio">
             Olá! Sou o criador por trás do portfólio <strong>yuremarketing</strong>. Desenvolvo aplicações web modernas,
             arquiteturas escaláveis e soluções avançadas baseadas em Inteligência Artificial.

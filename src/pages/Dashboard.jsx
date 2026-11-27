@@ -2,8 +2,10 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ProjectCard } from '../components/ProjectCard';
 import { RecentRepos } from '../components/RecentRepos';
 import { Link } from 'react-router-dom';
+import { useTypewriter } from '../hooks/useTypewriter';
 
 const PAGE_SIZE = 6;
+const HERO_TITLE_PLAIN = 'Construindo Soluções de Engenharia de IA & Software';
 
 const MOCK_PROJECTS = [
   {
@@ -27,6 +29,7 @@ const MOCK_PROJECTS = [
 ];
 
 export function Dashboard() {
+  const { typed: heroTyped, done: heroTypingDone } = useTypewriter(HERO_TITLE_PLAIN);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialError, setInitialError] = useState(null);
@@ -182,7 +185,14 @@ export function Dashboard() {
     <main id="main-content" tabIndex={-1} className="dashboard-page container animate-fade-in">
       <section className="hero-section">
         <h1 className="hero-title">
-          Construindo Soluções de <span className="highlight">Engenharia de IA</span> & Software
+          <span className={`hero-title-final${heroTypingDone ? '' : ' is-typing'}`}>
+            Construindo Soluções de <span className="highlight">Engenharia de IA</span> & Software
+          </span>
+          {!heroTypingDone && (
+            <span className="hero-title-overlay" aria-hidden="true">
+              {heroTyped}
+            </span>
+          )}
         </h1>
         <p className="hero-subtitle">
           Bem-vindo ao meu portfólio pessoal. Aqui você encontrará meus projetos principais,
@@ -198,7 +208,7 @@ export function Dashboard() {
 
       <section className="projects-section">
         <div className="section-header">
-          <h2>Projetos em Destaque</h2>
+          <h2 className="fn-header">01. projetos()</h2>
           {!loading && !initialError && (
             <span className="projects-count">{projects.length} projetos</span>
           )}
@@ -258,11 +268,25 @@ export function Dashboard() {
         }
 
         .hero-title {
+          display: grid;
           font-size: 2.8rem;
           font-weight: 800;
           line-height: 1.2;
           margin-bottom: 1.2rem;
           letter-spacing: -0.02em;
+        }
+
+        .hero-title-final,
+        .hero-title-overlay {
+          grid-area: 1 / 1;
+        }
+
+        .hero-title-final.is-typing {
+          opacity: 0;
+        }
+
+        .hero-title-overlay {
+          font-family: var(--font-mono);
         }
 
         .highlight {
@@ -290,6 +314,12 @@ export function Dashboard() {
         .btn-hero:hover {
           transform: translateY(-2px);
           filter: brightness(1.1);
+        }
+
+        @supports (color: color-mix(in srgb, red, blue)) {
+          .btn-hero:hover {
+            box-shadow: var(--shadow-sm), 0 0 28px -6px color-mix(in srgb, var(--accent-color) 45%, transparent);
+          }
         }
 
         .section-header {

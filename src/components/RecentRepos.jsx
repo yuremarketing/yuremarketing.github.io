@@ -83,7 +83,7 @@ export function RecentRepos() {
   return (
     <section className="recent-repos-section">
       <div className="section-header">
-        <h2>Repositórios Recentes</h2>
+        <h2 className="fn-header">02. repos_recentes()</h2>
         <span className="projects-count">últimos 6 meses</span>
       </div>
 
@@ -134,23 +134,49 @@ const recentReposStyles = `
   }
 
   .repo-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
     padding: 1.5rem;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: transform var(--transition-fast);
+  }
+
+  /* Painel HUD: o chanfro de canto fica num pseudo-elemento decorativo atrás do
+     conteúdo, nunca no <a> em si — clip-path direto no <a> cortaria o outline de
+     :focus-visible (WCAG 2.4.7) e o glow de hover abaixo (achado do Tech Lead,
+     Turno 38). */
+  .repo-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: var(--radius-md);
     backdrop-filter: var(--backdrop-blur);
     box-shadow: var(--shadow-sm);
-    color: var(--text-color);
-    text-decoration: none;
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .repo-card:hover::before {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow-lg);
+  }
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    .repo-card:hover::before {
+      box-shadow: var(--shadow-lg), 0 0 28px -6px color-mix(in srgb, var(--accent-color) 45%, transparent);
+    }
   }
 
   .repo-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    @media (prefers-reduced-motion: no-preference) {
+      transform: translateY(-4px);
+    }
   }
 
   .repo-card-header {
@@ -168,6 +194,7 @@ const recentReposStyles = `
   }
 
   .repo-stars {
+    font-family: var(--font-mono);
     font-size: 0.85rem;
     opacity: 0.8;
     white-space: nowrap;
@@ -185,6 +212,7 @@ const recentReposStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
+    font-family: var(--font-mono);
     font-size: 0.78rem;
     opacity: 0.7;
     gap: 0.5rem;
