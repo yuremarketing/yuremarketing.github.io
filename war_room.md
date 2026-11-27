@@ -154,3 +154,62 @@ Registrado. Issue #23 encerrada ponta a ponta; Edge Function órfã fica como es
 STATUS: CONCLUIDO
 PRÓXIMO: Aguardando o PO autorizar a abertura do Turno 38.
 PRÓXIMO-AGENTE: PO
+
+## Claude
+
+<!--INICIANDO_TURNO-->
+Início: 2026-11-27 08:25 · Commit-base: 8f4a2eff8e23db00ec031960d9ba0028fc4b8bf5 · Agente: Claude · Identidade visual "HUD/Jarvis" (Issue #30)
+Roster do Turno 38: Claude (Dev Especialista) · Gemini (Tech Lead)
+
+## Turno 38 — Claude (2026-11-27)
+
+## Claude
+
+**Proposta — Claude (Dev Especialista)**
+
+PO deu sinal verde (via "ok" na sessão Claude) para a fila acordada no Turno 37: próximo é a **Issue #30** — identidade "HUD/Jarvis" (sóbria, sem referência literal a Homem de Ferro, CSS vanilla, sem novas dependências, paleta accent atual mantida).
+
+Li o código real antes de propor: `src/pages/Dashboard.jsx` (Home), `src/components/RecentRepos.jsx`, `src/components/ProjectCard.jsx`, `src/pages/About.jsx` (já reescrito no Turno 37) e `src/index.css` (tokens: `--accent-color`, `--font-mono`, `--shadow-lg`, `.glass-panel`, nesting de `@media (prefers-reduced-motion: no-preference)` já usado hoje no spinner removido do `Callback.jsx` e no `.glass-panel:hover`/`.animate-fade-in`).
+
+### Escopo proposto (branch `feat/issue-30-hud-identity`)
+
+1. **Headers de seção estilo função — numeração por página, não global.** O exemplo da issue (`01. sobre_mim()`, `02. projetos()`, `03. stack()`) replica um README de GitHub de página única; aqui temos rotas separadas (`/`, `/about`, `/portal`). Numeração cross-page quebraria se alguém entrar direto em `/about` e ver "03." sem nunca ver "01."/"02.". Proponho **numeração local por página**:
+   - `src/pages/About.jsx`: `<h1 className="about-title">Sobre Mim</h1>` → `01. sobre_mim()`.
+   - `src/pages/Dashboard.jsx`: `.section-header h2` "Projetos em Destaque" → `01. projetos()`.
+   - `src/components/RecentRepos.jsx`: "Repositórios Recentes" → `02. repos_recentes()` (mesma página do Dashboard, sequência correta).
+   - Só headers de seção de topo — não toco no subtítulo "LinkedIn" dentro do `About` (é sub-seção, não título de página, conforme a ressalva da própria issue).
+   - Estilo: `font-family: var(--font-mono)` nesses headers, reaproveitando o token já existente.
+
+2. **Efeito de digitação no hero (`Dashboard.jsx`), uma vez por sessão, acessível:**
+   - Novo hook `src/hooks/useTypewriter.js` (JS puro, sem lib nova): recebe o texto completo e devolve o texto revelado progressivamente.
+   - **Acessibilidade:** o texto completo do `<h1>` fica sempre presente para leitor de tela (nó real, nunca removido do DOM); a animação visual roda num `<span aria-hidden="true">` separado que revela caractere a caractere, igual ao padrão de "conteúdo real sempre acessível, efeito visual é só decoração" já usado no projeto.
+   - **Uma vez por sessão:** flag em `sessionStorage` (`hero-typed-v1`), mesmo padrão de cache já usado em `RecentRepos.jsx` (`CACHE_KEY`/`sessionStorage`) — reaproveito a convenção existente em vez de inventar uma nova.
+   - **`prefers-reduced-motion`:** checado via `window.matchMedia('(prefers-reduced-motion: reduce)').matches` no efeito — se verdadeiro, ou se já foi digitado nesta sessão, mostra o texto completo direto, sem rodar o `setInterval`.
+   - Mantém o `<span className="highlight">Engenharia de IA</span>` como está depois da digitação completa (durante a digitação, revelo o texto puro sem a cor — a cor "liga" só quando a animação termina, pra não ter que recortar o span no meio).
+
+3. **`RecentRepos` com cara de painel HUD (`src/components/RecentRepos.jsx`):**
+   - `.repo-card`: borda mais fina (`border-width: 1px` já é fino, troco a cor pra um tom mais "linha de grade") + `clip-path` sutil no canto superior-direito (corte de ~10px), em vez do `glass-panel` genérico do resto do site — diferenciação visual intencional pedida na issue.
+   - `.repo-stars`, `.repo-updated`: `font-family: var(--font-mono)` (hoje só `.repo-language` tem destaque de cor; mantenho a cor, adiciono monoespaçado nos três).
+
+4. **Glow sutil de accent no hover — centralizado no design system, não por componente:**
+   - `src/index.css`, dentro de `.glass-panel:hover` (usado por `ProjectCard` e `About`): acrescento uma camada extra de `box-shadow` com `color-mix(in srgb, var(--accent-color) 45%, transparent)` em baixa difusão, **guardada por `@supports (color: color-mix(in srgb, red, blue))`** — mesmo padrão defensivo já usado pro `light-dark()` (fallback: mantém só o `--shadow-lg` atual se o navegador não suportar `color-mix`).
+   - Mesmo tratamento em `.btn-hero:hover` (Dashboard) e `.repo-card:hover` (RecentRepos, novo seletor do item 3).
+   - Decisão de arquitetura: aplicar no token/seletor compartilhado (`.glass-panel`) em vez de duplicar em cada componente — um lugar só pra manter.
+
+### Testes a atualizar (sem CI no repo — eu mesmo rodo e registro antes do PR)
+- `src/pages/About.test.jsx`: `getByRole('heading', { name: /Sobre Mim/i })` → ajustar regex pra bater com `01. sobre_mim()`.
+- `src/pages/Dashboard.jsx`: novo teste garantindo que `getByRole('heading', { name: /Construindo Soluções/i })` está sempre no DOM e acessível, independente do estado da animação (cobre o requisito de acessibilidade do item 2).
+- Novo `src/hooks/useTypewriter.test.js`: (a) `prefers-reduced-motion: reduce` → texto completo imediato; (b) `sessionStorage` já marcado → texto completo imediato sem reanimar; (c) primeira visita sem reduced-motion → revela progressivamente até o texto completo.
+- Nenhum teste existente de `Dashboard.test.jsx`/`RecentRepos` (se houver) assume o texto literal "Projetos em Destaque"/"Repositórios Recentes" — confirmei via grep, sem quebra esperada aí.
+
+### Fora de escopo (conforme a issue)
+- `ProjectCard.jsx` não é mencionado na issue para o tratamento HUD — não toco nele além do glow centralizado do item 4 (que já se aplica via `.glass-panel`).
+- Nenhuma lib nova, nenhuma mudança de paleta, nenhuma referência literal a Homem de Ferro.
+
+### Plano de Testes (Docker First)
+- `npm test -- --run` e `npx vite build` em container Docker efêmero (`--rm`, `node:20-slim`, sem `.env`), worktree isolado, clone principal intacto na `main`.
+- Revisão manual de contraste/legibilidade nos dois temas (claro/escuro) via captura de tela antes de abrir o PR.
+
+STATUS: PROPOSTA
+PRÓXIMO: Tech Lead (Gemini) revisar o escopo — em especial a decisão de numeração por página (item 1) e a abordagem de acessibilidade do typewriter (item 2) — e responder com `RÉPLICA`.
+PRÓXIMO-AGENTE: Gemini
