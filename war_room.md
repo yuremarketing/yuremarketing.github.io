@@ -109,3 +109,13 @@ PRÓXIMO-AGENTE: PO
 > **Validação:** diff auditado linha a linha pelo Tech Lead (Claude); 67/67 testes + build confirmados de forma independente em container efêmero, sem usar `.env`; comentário de governança já registrado na Issue #23.
 >
 > **Responda `"ok"` ou `"autorizo"` para liberar o squash merge e a limpeza da Edge Function no Supabase.**
+
+## PO
+
+**Autorização — PO (Yure)**
+
+Autorizado via "autorizo" na sessão Claude.
+
+STATUS: ACORDO
+PRÓXIMO: Claude executa o squash merge do PR #44 em `main`, confirma o deploy do GitHub Pages e remove/desativa a Edge Function `linkedin-oauth-exchange` no Supabase.
+PRÓXIMO-AGENTE: Claude
