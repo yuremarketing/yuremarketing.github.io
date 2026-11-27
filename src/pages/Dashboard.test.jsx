@@ -41,6 +41,7 @@ describe('Dashboard (Issue #37 — zero mocks em produção + estados explícito
   beforeEach(() => {
     vi.clearAllMocks();
     supabaseMode = 'ok';
+    sessionStorage.clear();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -75,6 +76,20 @@ describe('Dashboard (Issue #37 — zero mocks em produção + estados explícito
     expect(await screen.findByText('Projeto Real Supabase')).toBeInTheDocument();
     expect(screen.getByText('1 projetos')).toBeInTheDocument();
     expect(screen.queryByText(/Portfólio Dinâmico & Inteligente/i)).not.toBeInTheDocument();
+  });
+
+  it('mantém o heading do hero completo e acessível independente do estado da animação de digitação (Issue #30)', () => {
+    mockRange.mockResolvedValueOnce({ data: [], error: null });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByRole('heading', { name: /Construindo Soluções de Engenharia de IA & Software/i })
+    ).toBeInTheDocument();
   });
 
   it('exibe estado de erro discreto com retry (sem mocks) quando o Supabase retorna erro', async () => {

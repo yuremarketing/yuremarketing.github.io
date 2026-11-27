@@ -164,6 +164,22 @@ main:focus {
   }
 }
 
+/* Glow sutil de accent no hover (Issue #30 — HUD/Jarvis), só para o .glass-panel
+   compartilhado (ProjectCard, About). Classes locais de outros componentes (ex.:
+   .btn-hero, .repo-card) replicam o mesmo padrão no próprio <style> do componente,
+   pra não depender da ordem de injeção entre index.css e os estilos locais.
+   Guardado por @supports: sem color-mix(), o hover cai de volta no --shadow-lg puro. */
+@supports (color: color-mix(in srgb, red, blue)) {
+  .glass-panel:hover {
+    box-shadow: var(--shadow-lg), 0 0 28px -6px color-mix(in srgb, var(--accent-color) 45%, transparent);
+  }
+}
+
+/* Headers de seção em estilo "chamada de função" (Issue #30 — HUD/Jarvis) */
+.fn-header {
+  font-family: var(--font-mono);
+}
+
 /* Container */
 .container {
   width: 100%;
