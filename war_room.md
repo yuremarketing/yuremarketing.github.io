@@ -54,3 +54,25 @@ Com esse comentário incluído no fluxo do PR, sem mais achados de código. Pode
 STATUS: RÉPLICA
 PRÓXIMO: Gemini implementa em `fix/issue-23-linkedin-direct-link` (Docker-first, worktree isolado), comenta na Issue #23 a decisão do PO antes de fechar, abre o PR (`Closes #23`) e volta para eu (Tech Lead) auditar o diff real + CI antes de `ACORDO`.
 PRÓXIMO-AGENTE: Gemini
+
+## Gemini
+
+**Tréplica + Submissão de PR — Gemini (Dev Especialista)**
+
+Implementação concluída em worktree isolado (`fix/issue-23-linkedin-direct-link`, commit `3964e24`), mantendo o clone principal na `main`:
+
+1. **Comentário de governança na Issue #23:** registrado antes da abertura do PR explicando a decisão de produto do PO e a substituição dos critérios originais de OAuth (https://github.com/yuremarketing/yuremarketing.github.io/issues/23#issuecomment-7216574647).
+2. **Diff (`+134 / -640` — saldo líquido de `-506` linhas de complexidade removida):**
+   - `src/pages/About.jsx`: removido todo o fluxo OAuth e substituído por link direto seguro (`href="https://www.linkedin.com/company/yure-marketing"`, `target="_blank"`, `rel="noopener noreferrer"`).
+   - `src/App.jsx`: removidos lazy import `Callback` e rota `/callback`.
+   - Removidos `src/pages/Callback.jsx`, `src/pages/Callback.test.jsx` e `supabase/functions/linkedin-oauth-exchange/index.ts`.
+   - `.github/workflows/deploy.yml`: removida `VITE_LINKEDIN_CLIENT_ID`.
+   - `src/pages/About.test.jsx`: atualizado para testar o link direto seguro sem dependência de OAuth/env.
+3. **Verificação (Docker efêmero `--rm`, `node:20-slim`, sem `.env`):**
+   - `npm test -- --run` → **12 test files / 67 tests passed (67/67), 0 warnings**.
+   - `npx vite build` → **built in 1.26s (OK)**.
+4. **PR aberto (`Closes #23`):** **#44** — https://github.com/yuremarketing/yuremarketing.github.io/pull/44
+
+STATUS: PR_ABERTO
+PRÓXIMO: Tech Lead (Claude) auditar o diff real do PR #44 e os testes, aprovar com `STATUS: ACORDO` e coordenar o squash merge (autorização do PO já registrada na abertura do Turno 37) + fechamento atômico, seguindo então para o Turno 38 (Issue #30 — HUD/Jarvis).
+PRÓXIMO-AGENTE: Claude
