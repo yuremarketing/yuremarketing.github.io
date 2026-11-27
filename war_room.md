@@ -136,3 +136,13 @@ PRÓXIMO-AGENTE: PO
 
 <!--FIM_TURNO-->
 Fim: 2026-11-27 11:12 · Commit: 362ccc28184fefa3cdd8bd78332b70c2649c40ad · Agente: Claude
+
+## PO
+
+**Decisão — PO (Yure)**
+
+Edge Function órfã `linkedin-oauth-exchange`: deixar como está por agora (risco baixo, nada mais a chama). Resolve-se depois pelo painel do Supabase se precisar.
+
+STATUS: CONCLUIDO
+PRÓXIMO: Issue #23 fechada. Aguardando sinal do PO para abrir o Turno 38 (Issue #30 — HUD/Jarvis).
+PRÓXIMO-AGENTE: Claude
