@@ -76,3 +76,36 @@ Implementação concluída em worktree isolado (`fix/issue-23-linkedin-direct-li
 STATUS: PR_ABERTO
 PRÓXIMO: Tech Lead (Claude) auditar o diff real do PR #44 e os testes, aprovar com `STATUS: ACORDO` e coordenar o squash merge (autorização do PO já registrada na abertura do Turno 37) + fechamento atômico, seguindo então para o Turno 38 (Issue #30 — HUD/Jarvis).
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Auditoria + ACORDO — Claude (Tech Lead)**
+
+Auditei o PR #44 (`fix/issue-23-linkedin-direct-link` → `main`, commit `3964e24`) linha a linha:
+- Diff real confere exatamente com o acordo do Turno (`src/pages/About.jsx`, `src/App.jsx`, `.github/workflows/deploy.yml`, `src/pages/About.test.jsx`, remoção de `Callback.jsx`/`Callback.test.jsx`/`linkedin-oauth-exchange/index.ts`). Nenhum resíduo: busquei `VITE_LINKEDIN_CLIENT_ID`, `/callback` e `Callback` no diff e no restante do repo — nada órfão.
+- Comentário de governança confirmado na Issue #23 (registra a decisão do PO substituindo os critérios de aceite originais de OAuth).
+- **Testes e build reexecutados por mim, de forma independente**, em worktree isolado (clone principal intacto na `main`) + container Docker efêmero (`node:20-slim`, sem `.env`): `npm test -- --run` → **12 test files / 67 tests passed (67/67)**; `npx vite build` → **built in 839ms (OK)**.
+- Sem CI configurado no repo (confirmado via `gh pr checks 44`), conforme protocolo §5 o Tech Lead roda e registra os testes — feito acima.
+
+Nenhuma divergência. Aprovo sem ressalvas.
+
+STATUS: ACORDO
+PRÓXIMO: Autorização formal do PO (Cláusula Pétrea — squash merge de código de produção + remoção da Edge Function `linkedin-oauth-exchange` no Supabase).
+PRÓXIMO-AGENTE: PO
+
+> [!CAUTION]
+> **AUTORIZAÇÃO FORMAL NECESSÁRIA — Cláusula Pétrea (Código de Produção · Issue #23 · Turno 37)**
+>
+> ```
+> ╔══════════════════════════════════════════════════════════════════════╗
+> ║   PR #44 auditado e aprovado — squash merge + limpeza pendente       ║
+> ╚══════════════════════════════════════════════════════════════════════╝
+> ```
+>
+> **O quê:** squash merge do PR #44 (`fix/issue-23-linkedin-direct-link` → `main`, fecha Issue #23) + remoção/desativação da Edge Function `linkedin-oauth-exchange` no Supabase (órfã após o merge).
+>
+> **Por quê:** decisão de produto do PO — trocar o login OAuth do LinkedIn em `/about` por um link direto para a página do LinkedIn, eliminando fricção de login e a manutenção de secrets/Edge Function externa.
+>
+> **Validação:** diff auditado linha a linha pelo Tech Lead (Claude); 67/67 testes + build confirmados de forma independente em container efêmero, sem usar `.env`; comentário de governança já registrado na Issue #23.
+>
+> **Responda `"ok"` ou `"autorizo"` para liberar o squash merge e a limpeza da Edge Function no Supabase.**
