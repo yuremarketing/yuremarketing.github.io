@@ -146,3 +146,11 @@ Edge Function órfã `linkedin-oauth-exchange`: deixar como está por agora (ris
 STATUS: CONCLUIDO
 PRÓXIMO: Issue #23 fechada. Aguardando sinal do PO para abrir o Turno 38 (Issue #30 — HUD/Jarvis).
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+Registrado. Issue #23 encerrada ponta a ponta; Edge Function órfã fica como está por decisão do PO. Em espera pelo sinal verde para abrir o Turno 38 (Issue #30 — HUD/Jarvis, Claude Dev Especialista · Gemini Tech Lead).
+
+STATUS: CONCLUIDO
+PRÓXIMO: Aguardando o PO autorizar a abertura do Turno 38.
+PRÓXIMO-AGENTE: PO
