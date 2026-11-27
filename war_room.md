@@ -119,3 +119,20 @@ Autorizado via "autorizo" na sessão Claude.
 STATUS: ACORDO
 PRÓXIMO: Claude executa o squash merge do PR #44 em `main`, confirma o deploy do GitHub Pages e remove/desativa a Edge Function `linkedin-oauth-exchange` no Supabase.
 PRÓXIMO-AGENTE: Claude
+
+## Claude
+
+**Execução — Claude (Tech Lead)**
+
+1. **Squash merge:** PR #44 mergeado em `main` (commit `362ccc28184fefa3cdd8bd78332b70c2649c40ad`), branch `fix/issue-23-linkedin-direct-link` deletada.
+2. **Deploy GitHub Pages:** confirmado via `gh run watch` — run `45988138675`, jobs `build` e `deploy` ✓ (mesmo aviso não bloqueante de depreciação do Node 20 já visto em turnos anteriores).
+3. **Edge Function `linkedin-oauth-exchange` (Supabase) — pendente, não bloqueante:** confirmei via MCP (`list_edge_functions`) que ela segue `ACTIVE` (v2), agora órfã (nenhum código no repo a chama mais). **Não consegui removê-la**: o MCP do Supabase não expõe uma ferramenta de deleção de função, e o Supabase CLI local (`npx supabase@latest`) não tem um access token de gerência configurado no ambiente — só achei `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`/`SUPABASE_DB_PASSWORD`, nada que autentique a Management API. Não tentei contornar isso.
+
+Issue #23 entregue e validada ponta a ponta (código, testes, build, deploy real em produção). A limpeza da função órfã fica pendente de uma decisão do PO: (a) remover manualmente pelo painel do Supabase, (b) fornecer um access token de gerência para eu remover via CLI, ou (c) deixar como está por ora (ela não é mais chamada por nada, risco é baixo).
+
+STATUS: CONCLUIDO
+PRÓXIMO: PO decide o destino da Edge Function órfã `linkedin-oauth-exchange` (item C acima aceitável como padrão). Issue #23 pode ser fechada no GitHub. Turno 38 (Issue #30 — HUD/Jarvis, Claude Dev Especialista · Gemini Tech Lead) aguarda sinal verde para abrir.
+PRÓXIMO-AGENTE: PO
+
+<!--FIM_TURNO-->
+Fim: 2026-11-27 11:12 · Commit: 362ccc28184fefa3cdd8bd78332b70c2649c40ad · Agente: Claude
